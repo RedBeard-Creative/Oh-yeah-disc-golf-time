@@ -53,7 +53,7 @@ item('Opposite Release','If you normally throw backhand, throw forehand for the 
 item('Anhyzer Only','Release every full throw on an anhyzer angle. Putts may use your normal stroke.'),
 item('Doom Streak','Take two additional complete spins for THIS hole.',{effect:'extra2'}),
 item('Skip Shot Madness','Attempt a skip finish on every full throw where the ground and surroundings permit. Putts may be normal.'),
-item('Power Cap','Throw every disc at half of your usual throwing power for this entire hole.'),
+item('Blindfolded Putting','For every short putt on this hole, have a friend check that the area is clear, then putt from a stationary stance while blindfolded. Remove the blindfold before walking or making any longer throws.'),
 item('Doom Dealer','Assign this spin’s punishment to another player: they take an extra spin this hole.',{effect:'target'})
 ]},
 { id: 'risk', title: 'Risk & Reward', short: 'RISK', color: '#ffad47', challenges: [
