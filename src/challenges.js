@@ -1,4 +1,4 @@
-// The 61 user-approved challenges. Risk It was replaced with Closest Tree Challenge.
+// 61 Wheel of Doom challenges, updated to keep all active tasks about real disc golf throws, discs, or scoring.
 const item = (name, text, extra = {}) => ({ name, text, ...extra });
 export const categories = [
 { id: 'throw', title: 'Throwing Torture', short: 'THROW', color: '#229cf5', challenges: [
@@ -43,17 +43,17 @@ item('Bag Swap','Swap bags with another willing player for the entire hole.'),
 item('One Color Only','Choose one color and use only discs of that color this hole.'),
 item('Opponent Controls Bag','An opponent selects every disc you use this hole.')
 ]},
-{ id: 'chaos', title: 'Chaos & Comedy', short: 'CHAOS', color: '#3cd4b0', challenges: [
+{ id: 'chaos', title: 'Shot Chaos', short: 'CHAOS', color: '#3cd4b0', challenges: [
 item('Double Doom','Take two additional complete category + challenge spins on THIS hole.',{effect:'extra2'}),
 item('Lucky Escape','You are safe from a new punishment on this spin.',{effect:'escape'}),
 item('Revenge Spin','Choose another player to receive an extra spin on THIS hole.',{effect:'target'}),
-item('Silent Hole','No talking until the hole ends.'),
-item('Commentator','Narrate every throw like a sports announcer.'),
-item('Robot Throw','Perform your throwing motions like a robot.'),
-item('Victory Dance','Do a victory dance before every putt.'),
+item('Blind Disc Pick','Without looking in your bag, pull a disc. Use that disc for the entire hole.'),
+item('Hyzer Only','Every full throw must be released on a hyzer angle. Putts may use your normal stroke.'),
+item('Opposite Release','If you normally throw backhand, throw forehand for the hole; if normally forehand, throw backhand.'),
+item('Anhyzer Only','Release every full throw on an anhyzer angle. Putts may use your normal stroke.'),
 item('Doom Streak','Take two additional complete spins for THIS hole.',{effect:'extra2'}),
-item('Compliment Curse','Compliment an opponent before each throw.'),
-item('Slow Motion','Perform all pre-shot routines in slow motion.'),
+item('Skip Shot Madness','Attempt a skip finish on every full throw where the ground and surroundings permit. Putts may be normal.'),
+item('Power Cap','Throw every disc at half of your usual throwing power for this entire hole.'),
 item('Doom Dealer','Assign this spin’s punishment to another player: they take an extra spin this hole.',{effect:'target'})
 ]},
 { id: 'risk', title: 'Risk & Reward', short: 'RISK', color: '#ffad47', challenges: [
@@ -71,7 +71,7 @@ item('No Layups','Attempt direct putts when there is a safe, clear line.'),
 item('Doom Immunity','Earn a credit that cancels one future Wheel-of-Doom punishment.',{effect:'immunity'})
 ]}
 ];
-// One additional SAFE result per challenge wheel, in addition to all 61 approved challenges.
+// One SAFE result per challenge wheel in addition to the 61 challenge entries.
 export const safeResult = Object.freeze({name:'SAFE SPOT',text:'You escaped! No challenge or punishment from this spin for the whole hole.',effect:'escape',isSafe:true});
 export const wheelEntries = category => [...category.challenges, safeResult];
 export const totalChallenges = categories.reduce((n,c)=>n+c.challenges.length,0);
