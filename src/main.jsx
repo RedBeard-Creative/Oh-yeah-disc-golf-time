@@ -5,7 +5,7 @@ import './styles.css';
 
 const STORAGE = 'oh-yeah-disc-golf-time-v1';
 const uid = () => Math.random().toString(36).slice(2,10);
-const newPlayer = (name) => ({id:uid(),name,required:1,drawn:0,nextDebt:0,immunity:0,log:[],risks:[],bans:[]});
+const newPlayer = (name) => ({id:uid(),name,required:1,drawn:0,nextDebt:0,immunity:0,penaltyStrokes:0,log:[],risks:[],bans:[]});
 const initial = () => ({hole:1,players:[newPlayer('Player 1'),newPlayer('Player 2')],selected:null,history:[]});
 function load(){ try {const data=JSON.parse(localStorage.getItem(STORAGE));return data?.players?.length?data:initial()}catch{return initial()} }
 const colorFor = id => categories.find(c=>c.id===id)?.color || '#fff';
@@ -67,6 +67,7 @@ function App(){
    setGame(g=>({...g,history:[outcome,...g.history].slice(0,100),players:g.players.map(p=>p.id!==outcome.playerId?p:{
     ...p,drawn:p.drawn+1,required:p.required+(challenge.effect==='extra2'?2:0),
     immunity:p.immunity+(challenge.effect==='immunity'?1:0),
+    penaltyStrokes:(p.penaltyStrokes||0)+(challenge.name==='One Stroke Penalty'?1:challenge.name==='Two-Stroke Doom'?2:0),
     risks:challenge.effect==='risk'?[...p.risks,{id:outcome.id,name:challenge.name,status:'pending'}]:p.risks,
     bans:challenge.ban?[...p.bans,{name:challenge.name,remaining:challenge.ban}]:p.bans,
     log:[...p.log,outcome]
@@ -77,16 +78,19 @@ function App(){
   // Critical: required and drawn for THIS hole do not change. Only nextDebt is updated.
   updatePlayer(selected.id,p=>({...p,
    risks:p.risks.map(r=>r.id===id?{...r,status:success?'success':'failed'}:r),
-   nextDebt:success?p.nextDebt:Math.max(p.nextDebt,2)
+   nextDebt:success?p.nextDebt:Math.max(p.nextDebt,2),
+   immunity:p.immunity+(success&&['Basket Bounty','Saved by Par'].includes(p.risks.find(r=>r.id===id)?.name)?1:0),
+   penaltyStrokes:Math.max(0,(p.penaltyStrokes||0)-(success&&p.risks.find(r=>r.id===id)?.name==='Birdie Bounty'?1:0))
   }));
  };
  const applyTarget=()=>{
   if(!target||!result)return;
   updatePlayer(target,p=>({...p,required:p.required+1}));
+  setResult(r=>({...r,effect:'resolved'}));
   setTarget('');
  };
  const choiceExtra=()=>{updatePlayer(selected.id,p=>({...p,required:p.required+2,log:p.log.map(l=>l.id===result.id?{...l,resolution:'two extra spins'}:l)}));setResult({...result,effect:'resolved'})};
- const choiceStroke=()=>{updatePlayer(selected.id,p=>({...p,log:p.log.map(l=>l.id===result.id?{...l,resolution:'+1 stroke'}:l)}));setResult({...result,effect:'resolved'})};
+ const choiceStroke=()=>{updatePlayer(selected.id,p=>({...p,penaltyStrokes:(p.penaltyStrokes||0)+1,log:p.log.map(l=>l.id===result.id?{...l,resolution:'+1 stroke'}:l)}));setResult({...result,effect:'resolved'})};
  const nextHole=()=>{
   if(spinning)return;
   setGame(g=>({...g,hole:g.hole+1,selected:g.players[0]?.id,
@@ -137,6 +141,7 @@ function App(){
  {p.log.length?p.log.map(l=><div className="log" key={l.id}>• {l.name}{l.resolution?` (${l.resolution})`:''}</div>):<small className="muted">No challenges yet</small>}
  {p.bans.length>0&&<small className="warning">Active bans: {p.bans.map(b=>`${b.name} (${b.remaining} hole${b.remaining===1?'':'s'})`).join(', ')}</small>}
  {p.risks.map(r=><small className="muted" key={r.id}>{r.name}: {r.status}</small>)}
+ {(p.penaltyStrokes||0)>0&&<small className="warning">Wheel penalty strokes this round: {p.penaltyStrokes}</small>}
  {p.nextDebt>0&&<div className="next-debt">⚡ 2 spins scheduled for NEXT hole</div>}
  </div>)}</div>
  </section>
