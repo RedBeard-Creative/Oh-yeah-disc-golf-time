@@ -1,1 +1,58 @@
-<!doctype html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><meta name="theme-color" content="#080d1d"/><title>Oh Yeah Disc Golf Time! | Wheel of Doom</title></head><body><div id="root"></div><script type="module" src="/src/main.jsx"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1126">
+  <title>Oh Yeah Disc Golf Time! — Wheel of Doom</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <header class="hero">
+    <p class="eyebrow">🥏 THE ULTIMATE DISC GOLF GAME</p>
+    <h1>OH YEAH! <span>DISC GOLF TIME</span></h1>
+    <p>THE WHEEL OF DOOM — FIVE WHEELS • SIXTY-ONE CHALLENGES</p>
+  </header>
+  <main class="layout">
+    <section class="topbar">
+      <div class="hole"><small>NOW PLAYING</small><strong id="holeNumber">HOLE 1</strong></div>
+      <div class="mini-stat"><b>5</b><small>WHEELS</small></div>
+      <div class="mini-stat"><b>61</b><small>CHALLENGES</small></div>
+      <button id="showRules" class="quiet">ALL CHALLENGES</button>
+    </section>
+
+    <section id="catalogue" class="panel" hidden></section>
+
+    <section class="panel">
+      <div class="panel-heading"><h2>PLAYERS</h2><span>Everyone spins before each hole</span></div>
+      <div id="players" class="players"></div>
+      <form id="addPlayer" class="add-player">
+        <input id="playerName" maxlength="24" placeholder="New player name" aria-label="New player name" required>
+        <button type="submit">+ ADD PLAYER</button>
+      </form>
+    </section>
+
+    <section class="panel game">
+      <div class="panel-heading"><h2 id="currentPlayer">PLAYER 1</h2><span id="spinCount">1 spin remaining</span></div>
+      <div id="steps" class="steps">① WHEEL OF FATE → ② CHALLENGE → ③ DOOM</div>
+      <div class="game-grid">
+        <div class="wheel-area">
+          <div id="wheel" class="wheel"></div>
+          <div id="landing" class="landing" aria-live="polite">SPIN TO BEGIN</div>
+        </div>
+        <div id="controls" class="controls" aria-live="polite"></div>
+      </div>
+      <div id="pending" class="pending"></div>
+      <p class="rule-note">Failed risk challenges add TWO spins to the <b>NEXT hole only</b>. They never add a spin to this hole.</p>
+    </section>
+
+    <section class="panel">
+      <div class="panel-heading"><h2>HOLE TRACKER</h2><button id="nextHole" class="primary">NEXT HOLE →</button></div>
+      <p class="subtle">Any unanswered risk challenge counts as failed when you advance.</p>
+      <div id="tracker" class="tracker"></div>
+    </section>
+    <footer><button id="reset" class="quiet">RESET GAME</button><p>Saved automatically on this device. Make sure the throwing area is clear before trying a challenge.</p></footer>
+  </main>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
