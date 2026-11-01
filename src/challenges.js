@@ -71,4 +71,7 @@ item('No Layups','Attempt direct putts when there is a safe, clear line.'),
 item('Doom Immunity','Earn a credit that cancels one future Wheel-of-Doom punishment.',{effect:'immunity'})
 ]}
 ];
+// One additional SAFE result per challenge wheel, in addition to all 61 approved challenges.
+export const safeResult = Object.freeze({name:'SAFE SPOT',text:'You escaped! No challenge or punishment from this spin for the whole hole.',effect:'escape',isSafe:true});
+export const wheelEntries = category => [...category.challenges, safeResult];
 export const totalChallenges = categories.reduce((n,c)=>n+c.challenges.length,0);
