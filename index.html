@@ -369,10 +369,25 @@ function advancePath(b,dt){const ride=b.modePath;if(!ride)return false;
   }
  }
  const p=posOn(ride.path,ride.at);b.x=p.x;b.y=p.y;if(ride.kind==='u'){b.gravityDirection=p.dx>0.5?'RIGHT':p.dy<-.4?'UP':'DOWN'}if(ride.at>=ride.path.total){b.modePath=null;b.x=p.x;b.y=p.y;b.vx=p.dx*490-(ride.kind==='u'?260:40);b.vy=Math.max(130,p.dy*480);
- if(ride.kind==='rail'){const reward=15;cashChange(reward);income+=reward;addPoints(1800,0,b.x,b.y,COLORS.gold);notify('RAIL PRIZE +$'+reward,b.x,b.y-32,COLORS.gold);sound(1030,.16)}
+ if(ride.kind==='rail'){
+  totalRailTrips++;
+  const reward=ride.side==='split'?(railDiverter?18:12):ride.side==='custom'?22:15;
+  cashChange(reward);income+=reward;
+  addPoints(1800,0,b.x,b.y,COLORS.gold);
+  notify('RAIL PRIZE +$'+reward,b.x,b.y-32,COLORS.gold);sound(1030,.16)
+}
  return true}return true}
-function tryRail(b){if(b.rail||b.modePath||clock<railCooldown)return;
- for(const side of ['left','right']){if(!rails[side])continue;const entry=side==='left'?railPaths.left[0]:railPaths.right[0];if(Math.hypot(b.x-entry[0],b.y-entry[1])<23&&b.vy<200){attach(b,side==='left'?leftRail:rightRail,'rail',side);railCooldown=clock+.55;sound(790,.06);return}}
+function tryRail(b){
+ if(b.modePath||clock<railCooldown)return;
+ for(const [side,enabled] of Object.entries(rails)){
+  if(!enabled||!railSpecs[side])continue;
+  const path=railPathFor(side),first=path.points[0];
+  const radius=side==='rescue'?40:23;
+  if(Math.hypot(b.x-first[0],b.y-first[1])<radius && (side==='rescue'||Math.hypot(b.vx,b.vy)>65)){
+    attach(b,path,'rail',side);
+    railCooldown=clock+.4;sound(790,.06);return
+  }
+ }
 }
 function advanceBall(b,dt){
  if(b.modePath){advancePath(b,dt);return}
@@ -447,6 +462,27 @@ function selectPeg(index){
  cashChange(-t.cost);parts.push({id:idCounter++,kind:selectedKind,index,level:1,cooldown:0});selected=null;sound(800,.08);message('Placed '+selectedKind+' on peg '+pegGrid[index].key+'.');refreshShop();save()
 }
 function nearestPeg(x,y){let index=-1,distance=29;for(let i=0;i<pegGrid.length;i++){const p=pegGrid[i],d=Math.hypot(x-p.x,y-p.y);if(d<distance){distance=d;index=i}}return index}
+
+function machineAction(id){
+ const m=machineSpecs[id];if(!m)return;
+ if(!ownedMachines[id]){
+   if(wallet-m.price<MIN_CASH){message('Need $'+(m.price-wallet+MIN_CASH)+' more for '+m.name+'.');return}
+   cashChange(-m.price);ownedMachines[id]=true;save();message('Unlocked '+m.name+'. Press '+m.key+' to activate.');refreshShop();sound(780,.09);return
+ }
+ if(machineCooldowns[id]&&machineCooldowns[id]>clock){message(m.name+' cooling down for '+Math.ceil(machineCooldowns[id]-clock)+'s.');return}
+ machineCooldowns[id]=clock+3;
+ if(id==='gravity'){activeSwitchUntil=clock+6;message('Gravity reversed for six seconds!')}
+ else if(id==='diverter'){railDiverter=!railDiverter;message('Split rail set to '+(railDiverter?'JACKPOT':'BUMPER LOOP')+'.')}
+ else if(id==='magnet'){magnetPulseUntil=clock+4;message('Four-second magnetic pulse!')}
+ else if(id==='emergency'){for(const b of balls)if(b.y>450){b.vy-=460;b.vx+=(Math.random()-.5)*120}message('Emergency upper flipper boost!')}
+ else if(id==='jackpot'){if(roundHits<12){message('Hit '+(12-roundHits)+' more bumpers to charge jackpot.');machineCooldowns[id]=clock;return}roundHits-=12;cashChange(12);income+=12;addPoints(2400,0,291,290,COLORS.gold);message('JACKPOT! +$12');}
+ else if(id==='multiball'){if(roundHits<8){message('Need '+(8-roundHits)+' more hits to charge multiball.');machineCooldowns[id]=clock;return}roundHits-=8;for(let i=0;i<2&&balls.length<6;i++)spawn(false,chosenBall);message('Two extra balls released!')}
+ else if(id==='speed'){for(const b of balls){b.vy-=420;b.vx*=1.12}message('Speed gate boost!')}
+ else if(id==='elevator'){const b=balls.find(x=>!x.modePath&&x.y>410);if(b){attach(b,elevatorPath,'machine','elevator');message('Ball elevator activated!')}else{message('No low ball ready for elevator.');machineCooldowns[id]=clock;return}}
+ sound(870,.1);refreshShop()
+}
+for(const el of document.querySelectorAll('[data-machine]'))el.addEventListener('click',()=>machineAction(el.dataset.machine));
+
 function chooseMode(value){if(!maps[value])return;mode=value;balls=[];ensureBall();message(maps[value].desc);save();refreshShop()}
 $('builder').onclick=()=>toggleBuild(!isBuild);$('play').onclick=()=>toggleBuild(false);
 $('menu').onclick=()=>showMenu($('overlay').hidden);$('close').onclick=()=>showMenu(false);
@@ -456,7 +492,15 @@ document.addEventListener('pointerdown',e=>{if(!$('overlay').hidden&&!$('overlay
 for(const el of document.querySelectorAll('#bumper-shop .shop-item'))el.onclick=()=>{selectedKind=el.dataset.kind;selected=null;movingId=null;if(!isBuild)toggleBuild(true);showMenu(false);refreshShop()};
 for(const el of document.querySelectorAll('#ball-shop .ball-item'))el.onclick=()=>{chosenBall=el.dataset.ball;message('Selected '+ballTypes[chosenBall].name+' balls. The next purchased ball uses this type.');refreshShop();save()};
 for(const el of document.querySelectorAll('.mode'))el.onclick=()=>chooseMode(el.dataset.mode);
-for(const side of ['left','right'])$('rail-'+side).onclick=()=>{if(rails[side]){selected='rail-'+side;message('Rail '+side+' is installed. Rails are permanent upgrades in this version.');refreshShop();return}if(parts.some(p=>{const q=pegGrid[p.index];return q.col===(side==='left'?0:6)&&q.row>=2&&q.row<=5})){message('Move bumpers away from this rail mounting lane first.');return}if(wallet-900<MIN_CASH){message('Not enough cash to install a rail.');return}cashChange(-900);rails[side]=true;message('Installed the '+side+' rail!');sound(1020,.13);save();refreshShop()};
+for(const [side,r] of Object.entries(railSpecs))$('rail-'+side).onclick=()=>{
+ if(rails[side]){selected='rail-'+side;message(r.name+' already installed.');refreshShop();return}
+ if(side==='custom'){customRailPending=true;customRailPoints=[];if(!isBuild)toggleBuild(true);showMenu(false);message('Custom rail: click TWO sockets for its entrance and exit. Cost $'+r.price+'.');return}
+ if(parts.some(p=>{const q=pegGrid[p.index];return (side==='left'&&q.col===0||side==='right'&&q.col===6)&&q.row>=2&&q.row<=5})){
+ message('Move bumpers out of the edge rail lane first.');return
+ }
+ if(wallet-r.price<MIN_CASH){message('Earn $'+(r.price-wallet+MIN_CASH)+' more to build '+r.name+'.');return}
+ cashChange(-r.price);rails[side]=true;message('Built '+r.name+'!');sound(1020,.13);save();refreshShop()
+};
 $('upgrade').onclick=()=>{const b=selectedPart();if(!b||b.level>=3)return;const cost=costUpgrade(b);if(wallet-cost<MIN_CASH)return;cashChange(-cost);b.level++;sound(870,.07);save();refreshShop();message('Upgraded to level '+b.level+'. More points and money per hit.')};
 $('sell').onclick=()=>{const b=selectedPart();if(!b)return;const refund=Math.round(types[b.kind].cost*.65+(b.level-1)*types[b.kind].cost*.35);cashChange(refund);parts=parts.filter(p=>p.id!==b.id);selected=null;movingId=null;save();refreshShop();message('Sold bumper for $'+refund+'.')};
 $('move').onclick=()=>{const b=selectedPart();if(!b)return;movingId=b.id;message('Now tap an empty peg to move the selected bumper.');showMenu(false);refreshShop()};
@@ -467,10 +511,19 @@ $('sound').onclick=()=>{soundOn=!soundOn;$('sound').textContent=soundOn?'♫ SOU
 $('clear-layout').onclick=()=>{if(!confirm('Sell ALL owned bumpers for partial refunds and remove both rails?'))return;for(const b of parts)cashChange(Math.round(types[b.kind].cost*.65));parts=[];for(const side of ['left','right'])if(rails[side]){cashChange(450);rails[side]=false}selected=null;movingId=null;save();refreshShop();message('Layout cleared and partial refunds issued.')};
 for(const [id,f] of [['left',left],['right',right]]){const el=$(id);el.onpointerdown=e=>{e.preventDefault();el.setPointerCapture(e.pointerId);f.hold=true};for(const evt of ['pointerup','pointercancel','lostpointercapture'])el.addEventListener(evt,()=>f.hold=false)}
 canvas.onpointerdown=e=>{e.preventDefault();canvas.setPointerCapture(e.pointerId);const bounds=canvas.getBoundingClientRect(),x=(e.clientX-bounds.left)*W/bounds.width,y=(e.clientY-bounds.top)*H/bounds.height;
- if(isBuild){const index=nearestPeg(x,y);if(index>=0)selectPeg(index);else message('Tap one of the evenly spaced peg sockets.');return}
+ if(isBuild){const index=nearestPeg(x,y);
+ if(index<0){message('Click one of the evenly spaced peg sockets.');return}
+ if(customRailPending){if(!customRailPoints.includes(index))customRailPoints.push(index);
+  if(customRailPoints.length===2){
+   const price=railSpecs.custom.price;
+   if(wallet-price<MIN_CASH){customRailPoints=[];customRailPending=false;message('Not enough money for custom rail.')}
+   else{cashChange(-price);rails.custom=true;customRailPending=false;save();message('Custom rail built! It follows your two chosen sockets.')}
+  }else message('Custom rail: choose exit socket.');refreshShop();return
+ }
+ selectPeg(index);return}
  const side=x<W/2?'left':'right';pointerMap.set(e.pointerId,side);(side==='left'?left:right).hold=true};
 for(const evt of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(evt,e=>{const side=pointerMap.get(e.pointerId);pointerMap.delete(e.pointerId);if(side)(side==='left'?left:right).hold=[...pointerMap.values()].includes(side)});
-window.addEventListener('keydown',e=>{if(['Space','ArrowLeft','ArrowRight','KeyA','KeyD','KeyM','KeyB','KeyF'].includes(e.code))e.preventDefault();if(e.code==='Space'&&!e.repeat)dropBall(true);
+window.addEventListener('keydown',e=>{if(/^Digit[1-8]$/.test(e.code)&&!e.repeat){const key=e.code.slice(-1),id=Object.keys(machineSpecs).find(x=>machineSpecs[x].key===key);if(id)machineAction(id)}if(['Space','ArrowLeft','ArrowRight','KeyA','KeyD','KeyM','KeyB','KeyF'].includes(e.code))e.preventDefault();if(e.code==='Space'&&!e.repeat)dropBall(true);
  if(e.code==='KeyA'||e.code==='ArrowLeft')left.hold=true;if(e.code==='KeyD'||e.code==='ArrowRight')right.hold=true;
  if(e.repeat)return;
  if(e.code==='KeyB')toggleBuild(!isBuild);if(e.code==='KeyM')showMenu($('overlay').hidden);if(e.code==='KeyF')$('full').click();if(e.code==='Escape')showMenu(false)});
@@ -479,7 +532,7 @@ window.addEventListener('blur',()=>{left.hold=false;right.hold=false});
 function neonLine(x,y,xx,yy,c,w=3){g.save();g.strokeStyle=c;g.lineWidth=w;g.shadowColor=c;g.shadowBlur=11;g.lineCap='round';g.beginPath();g.moveTo(x,y);g.lineTo(xx,yy);g.stroke();g.restore()}
 function circle(x,y,r,c,bright=true){g.save();g.shadowColor=c;g.shadowBlur=bright?17:0;g.strokeStyle=c;g.lineWidth=3;g.beginPath();g.arc(x,y,r,0,TAU);g.stroke();g.restore()}
 function polyline(points,c,w=3){for(let i=1;i<points.length;i++)neonLine(points[i-1][0],points[i-1][1],points[i][0],points[i][1],c,w)}
-function drawBumper(x,y,kind,level,ghost=false){const t=types[kind],r=t.r;g.save();g.globalAlpha=ghost?.45:1;g.shadowColor=t.color;g.shadowBlur=ghost?5:17;g.fillStyle='#102743';g.strokeStyle=t.color;g.lineWidth=4;g.beginPath();g.arc(x,y,r,0,TAU);g.fill();g.stroke();g.shadowBlur=0;g.fillStyle=t.color;g.textAlign='center';g.font='bold '+(r<15?13:18)+'px system-ui';g.fillText(kind==='basic'?'●':kind==='power'?'⚡':kind==='grab'?'↪':kind==='phase'?'✧':'✳',x,y+5);if(level>1){g.font='bold 10px monospace';g.fillText('L'+level,x,y-r-7)}g.restore()}
+function drawBumper(x,y,kind,level,ghost=false){const t=types[kind],r=t.r;g.save();g.globalAlpha=ghost?.45:1;g.shadowColor=t.color;g.shadowBlur=ghost?5:17;g.fillStyle='#102743';g.strokeStyle=t.color;g.lineWidth=4;g.beginPath();g.arc(x,y,r,0,TAU);g.fill();g.stroke();g.shadowBlur=0;g.fillStyle=t.color;g.textAlign='center';g.font='bold '+(r<15?13:18)+'px system-ui';g.fillText(t.icon||'●',x,y+5);if(level>1){g.font='bold 10px monospace';g.fillText('L'+level,x,y-r-7)}g.restore()}
 function render(){
  g.setTransform(1.2,0,0,1.2,0,0);
  const bg=g.createLinearGradient(0,0,0,H);bg.addColorStop(0,'#0b2440');bg.addColorStop(.6,'#08132d');bg.addColorStop(1,'#080e20');g.fillStyle=bg;g.fillRect(0,0,W,H);
@@ -489,15 +542,35 @@ function render(){
  g.textAlign='right';g.fillStyle=COLORS.green;g.fillText(mode==='uloop'?'GRAVITY ↑ → ↓':mode==='flip'?'FLIP FIELD':'CLASSIC ↓',584,53);
  const border=[[60,112],[60,656],[133,714]];polyline(border,COLORS.blue,3);polyline([[508,112],[508,655],[432,713]],COLORS.blue,3);neonLine(60,112,95,85,COLORS.blue);neonLine(95,85,470,85,COLORS.blue);neonLine(470,85,508,112,COLORS.blue);
  if(mode==='uloop'){polyline(uPath,COLORS.purple,5);g.textAlign='center';g.fillStyle=COLORS.purple;g.font='bold 13px system-ui';g.fillText('UP',108,487);g.fillText('RIGHT',283,104);g.fillText('DOWN',475,470)}
+if(mode==='spiral'){polyline(spiralPath.points,COLORS.purple,3);g.textAlign='center';g.fillStyle=COLORS.purple;g.font='bold 18px system-ui';g.fillText('SPIRAL MADNESS',290,128)}
+if(mode==='eight'){polyline(eightPath.points,COLORS.purple,3);g.textAlign='center';g.fillStyle=COLORS.purple;g.font='bold 18px system-ui';g.fillText('∞ INFINITY EIGHT',290,124)}
+if(mode==='hourglass'){polyline([[58,365],[228,425]],COLORS.pink,6);polyline([[342,425],[507,365]],COLORS.pink,6)}
+if(mode==='orbital'){circle(284,369,95,COLORS.purple);circle(284,369,38,COLORS.blue);g.fillStyle=COLORS.purple;g.textAlign='center';g.font='bold 11px system-ui';g.fillText('GRAVITY WELL',284,377)}
+if(mode==='twins'){neonLine(285,152,285,347,COLORS.purple,5);neonLine(285,422,285,670,COLORS.purple,5);g.textAlign='center';g.font='bold 15px system-ui';g.fillStyle=COLORS.gold;g.fillText('TWIN TABLES',284,130)}
+if(mode==='tower'){neonLine(57,306,379,306,COLORS.pink,5);neonLine(199,490,509,490,COLORS.blue,5);g.textAlign='center';g.font='bold 14px system-ui';g.fillStyle=COLORS.gold;g.fillText('GRAVITY TOWER',280,128)}
  if(mode==='flip'){const a=phaseTimer*.24;g.textAlign='center';g.font='bold 20px system-ui';g.fillStyle=COLORS.purple;g.fillText('GRAVITY FIELD',285,117);g.beginPath();g.moveTo(285,157);g.lineTo(285+Math.sin(a)*33,157+Math.cos(a)*33);g.strokeStyle=COLORS.green;g.lineWidth=5;g.stroke()}
  for(const socket of pegGrid){g.fillStyle='#335876';g.beginPath();g.arc(socket.x,socket.y,5,0,TAU);g.fill();if(isBuild){g.strokeStyle='#4f8dbf';g.lineWidth=1;g.beginPath();g.arc(socket.x,socket.y,10,0,TAU);g.stroke()}}
  for(const b of starter)drawBumper(b.x,b.y,b.kind,1);
  for(const part of parts){const p=pegGrid[part.index];drawBumper(p.x,p.y,part.kind,part.level);if(isBuild&&selected===part.id){circle(p.x,p.y,types[part.kind].r+8,'#fff',false)}}
- for(const side of ['left','right']){const x=side==='left'?75:491,y=497;g.save();g.globalAlpha=rails[side]?1:.35;circle(x,y,15,rails[side]?COLORS.gold:COLORS.blue);g.textAlign='center';g.fillStyle=COLORS.gold;g.font='11px system-ui';g.fillText('RAIL',x,535);if(rails[side]){polyline(railPaths[side],COLORS.gold,3);for(const marker of [.24,.43,.62,.81]){const p=posOn(side==='left'?leftRail:rightRail,(side==='left'?leftRail:rightRail).total*marker);circle(p.x,p.y,9,COLORS.purple)}}g.restore()}
+ for(const [side,r] of Object.entries(railSpecs)){
+ const p=r.entry;g.save();g.globalAlpha=rails[side]?1:.32;circle(p[0],p[1],side==='rescue'?16:11,rails[side]?COLORS.gold:COLORS.blue);
+ if(rails[side]){
+  const path=railPathFor(side);polyline(path.points,COLORS.gold,2.6);
+  for(const marker of [.24,.43,.62,.81]){const pt=posOn(path,path.total*marker);circle(pt.x,pt.y,7,COLORS.purple)}
+ }g.restore()
+}
+if(customRailPending&&customRailPoints.length){const q=pegGrid[customRailPoints[0]];circle(q.x,q.y,18,COLORS.green)}
  circle(294,379,16,COLORS.gold);g.fillStyle=COLORS.gold;g.textAlign='center';g.font='bold 10px system-ui';g.fillText('RAIL PRIZE',294,411);
  polyline([[60,653],[132,707]],COLORS.pink,4);polyline([[508,653],[433,707]],COLORS.blue,4);
- for(const [f,color] of [[left,COLORS.pink],[right,COLORS.blue]]){const tx=f.x+Math.cos(f.a)*f.len,ty=f.y+Math.sin(f.a)*f.len;neonLine(f.x,f.y,tx,ty,color,17);circle(f.x,f.y,9,color)}
- for(const ball of balls){g.save();g.shadowColor='#bdfaff';g.shadowBlur=20;g.fillStyle='#f4ffff';g.beginPath();g.arc(ball.x,ball.y,ball.r,0,TAU);g.fill();g.restore()}
+ for(const [f,color] of [[left,COLORS.pink],[right,COLORS.blue]]){
+ const tx=f.x+Math.cos(f.a)*f.len,ty=f.y+Math.sin(f.a)*f.len;neonLine(f.x,f.y,tx,ty,color,17);circle(f.x,f.y,9,color)}
+if(mode==='tower'||mode==='twins'||ownedMachines.emergency){
+ for(const [f,color] of [[upperFlippers[0],COLORS.purple],[upperFlippers[1],COLORS.green]]){
+ const tx=f.x+Math.cos(f.a)*f.len,ty=f.y+Math.sin(f.a)*f.len;
+ neonLine(f.x,f.y,tx,ty,color,13);circle(f.x,f.y,8,color)}
+}
+ for(const ball of balls){g.save();const spec=ballTypes[ball.type]||ballTypes.steel;g.shadowColor=spec.color;g.shadowBlur=21;g.fillStyle=spec.color;
+ g.globalAlpha=ball.type==='ghost'?.65:1;g.beginPath();g.arc(ball.x,ball.y,ball.r,0,TAU);g.fill();g.restore()}
  for(const p of particles){g.save();g.globalAlpha=clamp(p.t*2,0,1);g.fillStyle=p.c;g.fillRect(p.x,p.y,4,4);g.restore()}
  for(const p of popups){g.save();g.globalAlpha=clamp(p.time*2,0,1);g.textAlign='center';g.fillStyle=p.c;g.font='bold 12px system-ui';g.fillText(p.t,p.x,p.y);g.restore()}
  g.textAlign='center';g.fillStyle='#84c6e8';g.font='bold 11px system-ui';g.fillText('BALLS '+balls.length+'  ·  CASH $'+wallet,290,818);
