@@ -10,17 +10,27 @@ Click the preview's **open in new tab** icon to remove StackBlitz's editor/sideb
 
 The game's complete code is in `index.html`; no server calls are needed to play. It keeps progress in the browser's local storage. The updated game **continues to use the V2 save key** (`nexus-pinball-tycoon-v2`) to load earlier V2 money and parts when compatible.
 
-## Seven maps — MAP01 through MAP07
+## Seven maps, unlocks, and environment art
 
-- **MAP01 Gravity U Deluxe:** continuous guided U-shaped launch (up / over / down), then free pinball play.
-- **MAP02 Spiral Madness:** guided spiral launch path.
-- **MAP03 Infinity Eight:** guided figure-eight launch path.
-- **MAP04 Hourglass:** physical converging barriers and a narrowed passage.
-- **MAP05 Orbital Station:** physically calculated inward gravity-well field.
-- **MAP06 Twin Tables:** divided field with central opening and two additional flippers.
-- **MAP07 Gravity Tower:** two upper barriers and extra upper flippers.
+You begin with **MAP01** unlocked. The others can be purchased one at a time from the **World Map** section of the floating menu. Clicking a locked map attempts to buy it; if there is not enough money (including the $75 protected minimum), it stays locked and displays the shortfall. Unlocks are permanent and are saved automatically.
 
-These are all visual/gameplay variations inside the shared table canvas. The U, spiral and figure-eight are deliberately **guided pathways**, not free-body rotating-gravity simulations. Balls on those paths are on a separate upper track layer and do not collide with lower-layer bumpers until they exit the guide. No maps above MAP07 are included.
+| Map | Theme / background | Unlock cost | Gameplay |
+| --- | --- | ---: | --- |
+| MAP01 — Gravity U Deluxe | Neon Foundry; subdued gears and steel | **Free, starts unlocked** | Guided U-shaped start and classic flippers |
+| MAP02 — Spiral Madness | Summer Sky; faded translucent clouds and soft hills | **$650** | Curving spiral launch path |
+| MAP03 — Infinity Eight | Twilight Fair; subdued festival lights | **$1,400** | Figure-eight guided loop |
+| MAP04 — Hourglass | Desert Circuit; dusty sand gradients and dunes | **$2,750** | Converging solid walls |
+| MAP05 — Orbital Station | Nebula Orbit; soft star field and planet rings | **$4,800** | Real inward gravity-well force |
+| MAP06 — Twin Tables | Cyber District; faint skyline and grid reflections | **$7,600** | Divided field and extra upper flippers |
+| MAP07 — Gravity Tower | Frostpeak; pale snowy mountains and falling ice specks | **$11,500** | Tiered obstacles and upper flipper platforms |
+
+**The artwork uses layered Canvas gradients, gently transparent landscape shapes and faded atmospheric details**, not bright solid-white line art. In particular, Summer Sky's clouds are translucent filled clusters.
+
+**Raised 2.5D rails** replace floating neon lines. The table edges, MAP01–03 guide tracks, Hourglass walls, Twin Tables dividers, Gravity Tower platforms, and every purchased rail have dark lower shadows, metallic sidewalls, beveled highlights, recessed riding channels, and raised entry/exit rings. This is simulated depth drawn in 2D Canvas—not a WebGL 3D world.
+
+The U, Spiral, and Infinity Eight starts are deliberately **guided paths**, not free-body rotating gravity. Balls riding those elevated rails are intentionally on a guided layer until exiting into the main physics playfield; the other maps have their own collision walls or gravity effects. No maps above MAP07 are included.
+
+New saves start in MAP01. Existing V2 saves retain money and equipment where compatible. A world that was active in an older save is preserved as unlocked; previously selected worlds cannot be obtained for free by loading an old blueprint.
 
 ## Bumper types (17)
 
@@ -112,3 +122,19 @@ Collision handling uses a fixed **240 Hz simulation step**, bounded ball speeds,
 - More realistic split-table geometry and distinct map-specific art.
 - A genuine predictive trajectory preview that accounts for built equipment.
 - Optimization for the Waveshare S06 smartwatch after the browser version is stable. This is **not yet running on watch hardware**.
+## Automated regression tests
+
+Run the no-dependency smoke suite from the repository root:
+
+```bash
+node tests/smoke.cjs
+```
+
+The suite has **122 passing checks** at the time of this update. They cover all seven map selections, map unlock purchases and save migration, distinct background gradients, raised rail drawing, all 17 bumper types, all eight ball choices, eight purchasable machines, nine rail locations including a custom rail, bumper scoring/rebounding, flipper motion, automatic ball respawning, the protected cash floor, blueprints, saved data, and long-running finite ball positions on each map.
+
+Important limitation: the suite runs browser-style UI and Canvas mocks, not an actual visible Chrome/StackBlitz session, so it does **not** guarantee pixel-perfect visuals or real-device performance. Open the game in a new browser tab for the visual and feel test.
+
+### Collision fix
+
+Solid bumpers now **always resolve their physical collision even during their scoring cooldown**. A cooldown may suppress repeated score awards, but no longer makes the bumper temporarily non-solid. The Ultra Phase target is intentionally pass-through.
+
