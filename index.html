@@ -878,7 +878,7 @@ let last=performance.now(),acc=0,frames=0;
 function frame(t){acc+=Math.min(.05,(t-last)/1000);last=t;let steps=0;while(acc>=DT&&steps++<16){step(DT);acc-=DT}if(steps>=16)acc=0;render();if(++frames%20===0){refreshShop();if(savePending){save();savePending=false}}requestAnimationFrame(frame)}
 load();applyMapTheme();ensureBall();refreshShop();requestAnimationFrame(frame);
 window.__pinballTest={get:()=>({
- wallet,score,mode,balls:balls.length,ballStates:balls.map(b=>({x:b.x,y:b.y,vx:b.vx,vy:b.vy,type:b.type,path:b.modePath?.kind||null,railSide:b.modePath?.side||null})),
+ wallet,score,mode,mapUnlocks:{...mapUnlocks},balls:balls.length,ballStates:balls.map(b=>({x:b.x,y:b.y,vx:b.vx,vy:b.vy,type:b.type,path:b.modePath?.kind||null,railSide:b.modePath?.side||null})),
  income,parts:parts.map(p=>({...p})),rails:{...rails},selected,isBuild,chosenBall,
  ownedMachines:{...ownedMachines},researchLevel,contractsDone,prestigeLevel,totalHits,totalRailTrips,
  blueprints:blueprints.map(p=>p?{parts:p.parts.length,mode:p.mode}:null),selectedIds:[...selectedIds],zoom,
