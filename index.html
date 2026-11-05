@@ -1,436 +1,293 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#080d1b">
-<title>G32 Neon Pinball Tycoon</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#071121"><title>G32 · Pinball Tycoon V2</title>
 <style>
-:root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#edfaff;background:#060a17;color-scheme:dark}
-*{box-sizing:border-box}
-html,body{margin:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none}
-body{touch-action:manipulation}
-#arcade{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden;background:radial-gradient(ellipse at 50% 45%,#203b64 0%,#0a172e 54%,#060a17 100%)}
-#arcade::before{content:"";position:absolute;inset:-8%;pointer-events:none;background:repeating-linear-gradient(0deg,#52c2f90a 0px,#52c2f90a 1px,transparent 1px,transparent 42px),repeating-linear-gradient(90deg,#52c2f90a 0px,#52c2f90a 1px,transparent 1px,transparent 42px);opacity:.35}
-.board-wrap{position:relative;z-index:1;flex:none;width:min(100vw,71.42857dvh);aspect-ratio:5/7;max-height:100dvh;border:2px solid #3f7198;border-radius:10px;background:#07162a;box-shadow:0 0 35px #25aeff45,0 0 95px #000c;overflow:hidden}
-.game{display:block;width:100%;height:100%;touch-action:none}
-#floating-toolbar{position:fixed;z-index:8;top:max(10px,env(safe-area-inset-top));right:max(10px,env(safe-area-inset-right));display:flex;align-items:center;gap:8px}
-.floating-btn{display:grid;place-items:center;min-width:47px;min-height:47px;padding:7px 12px;background:#081a32c9;border:1px solid #55c6ee;border-radius:13px;color:#b5f3ff;font:800 19px system-ui;cursor:pointer;box-shadow:0 0 22px #248cc955;backdrop-filter:blur(8px);touch-action:manipulation}
-.floating-btn:active{transform:translateY(1px);background:#1d5676}
-#menu-button[aria-expanded="true"]{background:#1f5979;border-color:#98e8ff}
-#overlay-panel{position:fixed;z-index:9;right:max(10px,env(safe-area-inset-right));top:calc(max(10px,env(safe-area-inset-top)) + 57px);width:min(340px,calc(100vw - 20px));max-height:calc(100dvh - 76px);overflow:auto;padding:15px;border-radius:17px;border:1px solid #60c2e2;background:#0b1930d9;box-shadow:0 15px 65px #000b,0 0 28px #2188d033;backdrop-filter:blur(13px);-webkit-backdrop-filter:blur(13px)}
-#overlay-panel[hidden]{display:none!important}
-#overlay-panel h1{font-size:19px;letter-spacing:.13em;margin:0 0 3px;color:#a2edff}
-#overlay-panel .close-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.subtitle{color:#91aec9;font-size:11px;letter-spacing:.15em}
-#overlay-panel h2{font-size:11px;color:#72dfff;letter-spacing:.15em;margin:16px 0 9px}
-.score{font-size:38px;font-weight:900;font-variant-numeric:tabular-nums;line-height:1.1;margin-top:5px}
-.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:11px;margin-top:12px}
-.stat-label{font-size:10px;color:#9bbed8;letter-spacing:.08em}
-.stat-val{font-size:19px;font-weight:800;margin-top:3px}
-.status-row{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
-.pill{font-size:10px;color:#97f9da;border:1px solid #2a9781;border-radius:20px;padding:5px 8px;font-weight:800}
-.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.btn{font:800 13px system-ui;letter-spacing:.02em;color:#effaff;background:#153655c9;border:1px solid #438cb6;border-radius:10px;padding:13px 7px;cursor:pointer;user-select:none;touch-action:none}
-.btn:active,.btn.down{background:#236e8f}
-.actions #launch{grid-column:1/-1;background:#177294;min-height:45px;border-color:#7ae3fc}
-#overlay-panel p,#overlay-panel li{font-size:12px;line-height:1.55;color:#c2d5e7}
-#overlay-panel ul{padding-left:18px;margin:6px 0}
-.keys{font:800 11px system-ui;padding:1px 4px;background:#2a4663;border-radius:4px;color:#dffbff}
-#panel-close{border:1px solid #41688e;color:#dbf5ff;border-radius:8px;background:#132f4e;width:31px;height:31px;cursor:pointer;font-weight:900}
-#mobile-flips{position:absolute;z-index:3;bottom:2.7%;left:8px;right:8px;display:none;justify-content:space-between;pointer-events:none}
-#mobile-flips .btn{pointer-events:auto;width:83px;min-height:41px;background:#07172d9e;border-color:#3c8baa;border-radius:13px;color:#b6efff}
-#mobile-flips #left{border-color:#f76cb5;color:#ffd1e7}
-#mobile-flips #right{border-color:#4edafa}
-#mini-tip{position:fixed;bottom:max(9px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:4;font-size:11px;color:#b7d9f0;background:#08172cc4;border:1px solid #2f5670;border-radius:12px;padding:6px 11px;pointer-events:none;white-space:nowrap;opacity:.9}
-@media(pointer:coarse){#mobile-flips{display:flex}#mini-tip{display:none}}
-@media(max-width:500px){#overlay-panel{width:min(318px,calc(100vw - 20px))}#floating-toolbar{gap:5px}.floating-btn{min-width:44px;min-height:44px}}
-
-/* Pinball Tycoon: builder, money display, and floating shop */
-#floating-toolbar{gap:7px}
-#build-button{font-size:13px;min-width:90px;padding:7px 11px}
-#build-button.active{background:#155c70;border-color:#95ffdb;color:#dcfff2;box-shadow:0 0 20px #33e8b077}
-#cash-hud{position:fixed;z-index:5;top:max(10px,env(safe-area-inset-top));left:max(10px,env(safe-area-inset-left));font-weight:900;font-size:14px;color:#a6ffdc;background:#081b30cb;border:1px solid #43ac93;border-radius:11px;padding:10px 13px;backdrop-filter:blur(8px)}
-#hud-mode{font-size:10px;color:#9ed8ef;letter-spacing:.12em;margin-left:6px}
-#build-hint{position:fixed;z-index:6;bottom:12px;left:50%;transform:translateX(-50%);max-width:90vw;width:max-content;padding:9px 12px;border:1px solid #60bcd9;background:#092844ee;color:#caf8ff;font-size:11px;font-weight:800;text-align:center;border-radius:10px;pointer-events:none}
-#build-hint[hidden]{display:none!important}
-#tycoon-shop{margin:12px 0;border:1px solid #286788;background:#0e2a4652;padding:11px;border-radius:12px}
-.shop-summary{display:grid;grid-template-columns:1fr 1fr;gap:9px;color:#9fc7de;font-size:10px}
-.shop-summary>div{background:#112947;padding:8px;border-radius:8px}
-.shop-summary strong{display:block;color:#9effdd;font-size:20px}
-#overlay-panel .shop-caption{color:#b0cddd;font-size:11px;margin:9px 0}
-.bumper-catalog{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:10px 0}
-.shop-item{display:flex;min-height:75px;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:7px 3px;background:#10263f;color:#dff6ff;border:1px solid #496c88;border-radius:9px;cursor:pointer;touch-action:manipulation}
-.shop-item.active{outline:2px solid #6fe9fb;background:#19415b}
-.shop-orb{font-size:20px;filter:drop-shadow(0 0 5px currentColor)}.shop-orb.basic{color:#57dbff}.shop-orb.power{color:#ff6cc6}.shop-orb.gold{color:#ffe16e}
-.shop-item b{font-size:12px}.shop-item small{font-size:9px;color:#9cbed6}
-.shop-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}.shop-actions .btn{font-size:11px;padding:9px 4px}.shop-actions .btn:disabled{opacity:.3;cursor:not-allowed}
-.shop-done{display:block;width:100%;margin-top:9px;border-color:#58d9b5;background:#1a5a4a}
-@media(max-width:550px){#cash-hud{top:8px;left:8px;font-size:12px;padding:7px 9px}#floating-toolbar{top:8px;right:8px;gap:5px}#build-button{min-width:67px;font-size:11px;padding:7px 8px}#build-hint{font-size:9px}#overlay-panel{max-height:calc(100dvh - 68px);width:min(350px,calc(100vw - 20px))}}
+:root{color-scheme:dark;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:#050b18;color:#e7f9ff}
+*{box-sizing:border-box}html,body{height:100%;margin:0;overflow:hidden;overscroll-behavior:none}
+body{background:radial-gradient(ellipse at center,#1a3150 0%,#070e20 67%,#040814 100%);touch-action:manipulation}
+#stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+#boardbox{height:min(100dvh,140vw);width:min(100vw,71.42857dvh);aspect-ratio:5/7;border:2px solid #4285b4;border-radius:12px;box-shadow:0 0 38px #2485ce35;position:relative;overflow:hidden}
+#board{display:block;width:100%;height:100%;touch-action:none;background:#061225}
+#top-left,#top-right{position:fixed;z-index:8;top:9px;display:flex;gap:7px;align-items:center}
+#top-left{left:10px}#top-right{right:10px}
+button{font:700 13px system-ui;cursor:pointer;touch-action:manipulation}
+.chip{border:1px solid #4dadd5;color:#c9f7ff;background:#0a213bcf;border-radius:11px;padding:11px 12px;backdrop-filter:blur(10px);box-shadow:0 0 10px #25aaff22}
+.chip:focus-visible,.shop-item:focus-visible,.btn:focus-visible{outline:2px solid #fff;outline-offset:2px}
+#wallet{color:#a7ffdb;font-weight:900;border:1px solid #2d9877;background:#0d213bcf;border-radius:11px;padding:11px 12px;font-size:13px}
+#wallet small{color:#8cb4c9;font-weight:600;font-size:10px;margin-left:5px}
+#builder.active{background:#1c614f;border-color:#84ffd3}
+#overlay{position:fixed;z-index:12;right:9px;top:61px;width:min(375px,calc(100vw - 18px));max-height:calc(100dvh - 72px);overflow:auto;border:1px solid #559cc7;border-radius:17px;padding:15px;background:#0a1930ee;backdrop-filter:blur(13px);box-shadow:0 18px 60px #000b}
+#overlay[hidden],#placement-tip[hidden]{display:none!important}
+.panel-title{display:flex;justify-content:space-between;align-items:center;gap:10px}
+h1{font-size:20px;color:#8feeff;letter-spacing:.06em;margin:1px 0 5px}h2{font-size:12px;letter-spacing:.12em;color:#7ddfff;margin:17px 0 8px;text-transform:uppercase}
+.eyebrow{font-size:10px;letter-spacing:.2em;color:#91aac4}
+.small{font-size:11px;line-height:1.55;color:#acc8dd;margin:8px 0}
+#overlay button.close{background:#183451;color:#dbf4ff;border:1px solid #456d8a;border-radius:8px;padding:7px 11px}
+#message{border:1px solid #1f8c89;border-radius:9px;color:#a7ffe9;font-size:12px;padding:9px;min-height:40px;background:#0f33433d;margin:11px 0}
+.statgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:#102a45;border-radius:10px;padding:9px}.stat span{display:block;font-size:10px;color:#9bbad0}.stat strong{font-size:20px}
+.modegrid,.shopgrid,.actiongrid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}
+.modegrid{grid-template-columns:repeat(3,1fr)}
+.btn,.mode,.shop-item{color:#e5faff;border:1px solid #3d759c;border-radius:9px;background:#133451;padding:10px 8px}
+.mode{font-size:11px;min-height:48px}.mode.active,.shop-item.active{border-color:#8affdd;background:#215c65}
+.shopgrid{grid-template-columns:repeat(2,1fr)}
+.shop-item{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-height:75px;text-align:left}
+.shop-item b{font-size:12px}.shop-item small{font-size:10px;color:#a0c2d8}.shop-item em{font-style:normal;color:#a0ffdc;font-size:11px}
+.shop-item[data-kind=phase] b{color:#ffe37b}.shop-item[data-kind=grab] b{color:#ff91da}
+.actiongrid .btn{font-size:11px}.btn:disabled{opacity:.35;cursor:not-allowed}.btn.primary{background:#11718a;border-color:#67e0ed}
+#placement-tip{position:fixed;z-index:7;bottom:9px;left:50%;transform:translateX(-50%);max-width:92vw;width:max-content;background:#0c2846e8;border:1px solid #72d5fb;color:#d3f8ff;padding:9px 12px;border-radius:10px;font-size:11px;text-align:center;pointer-events:none}
+#touch{position:fixed;z-index:5;bottom:max(11px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:min(100vw,710px);display:none;justify-content:space-between;padding:0 10px;pointer-events:none}
+#touch button{pointer-events:auto;background:#102e53bb;border:1px solid #5bbad7;border-radius:13px;min-width:86px;padding:14px 11px;color:#e2faff;touch-action:none}
+#touch #left{border-color:#f180c0}#touch #right{border-color:#5bdfff}
+#pulse{position:fixed;z-index:5;bottom:8px;left:50%;transform:translateX(-50%);color:#9fbad5;background:#0b1b30c5;font-size:10px;border:1px solid #224665;padding:6px 10px;border-radius:10px;white-space:nowrap;pointer-events:none}
+.help{font-size:11px;line-height:1.7;color:#bdd1e2;padding-left:18px}
+#mobile-launch{position:fixed;z-index:8;bottom:76px;right:9px;padding:10px 12px;display:none}
+@media(pointer:coarse){#touch{display:flex}#pulse{display:none}#mobile-launch{display:block}}
+@media(max-width:550px){#top-right,#top-left{gap:4px}#wallet,.chip{font-size:11px;padding:9px}#wallet small{display:none}#overlay{top:49px;max-height:calc(100dvh - 55px)}}
 </style>
 </head>
 <body>
-<div id="arcade">
-  <div class="board-wrap" id="board-wrap">
-    <canvas class="game" id="game" width="720" height="1008" aria-label="Neon Pinball full-screen arcade playfield"></canvas>
-    <div id="mobile-flips"><button id="left" class="btn" aria-label="Hold left flipper">◀ FLIP</button><button id="right" class="btn" aria-label="Hold right flipper">FLIP ▶</button></div>
-  </div>
-</div>
-<div id="floating-toolbar">
- <button class="floating-btn" id="fullscreen-button" aria-label="Toggle fullscreen" title="Fullscreen">⛶</button>
- <button class="floating-btn" id="build-button" aria-label="Toggle build mode" title="Build your own bumpers">🛠 BUILD</button>
- <button class="floating-btn" id="menu-button" aria-label="Show floating game controls" aria-controls="overlay-panel" aria-expanded="false" title="Menu">☰</button>
-</div>
-<div id="cash-hud">💰 <span id="hud-cash">$1,500</span> <span id="hud-mode">PLAY</span></div>
-<div id="build-hint" hidden>🛠 BUILD MODE — SELECT A BUMPER IN THE MENU, THEN TAP THE TABLE</div>
-<div id="mini-tip">SPACE: LAUNCH · A/D: FLIPPERS · B: BUILD · M: MENU · F: FULLSCREEN</div>
-<aside id="overlay-panel" hidden aria-label="Floating game information and controls">
- <div class="close-row"><div><div class="subtitle">NEXUS ARCADE · G32</div><h1>PINBALL TYCOON</h1></div><button id="panel-close" aria-label="Close menu">✕</button></div>
- <div class="score" id="score">0</div>
- <div class="stats"><div><div class="stat-label">BEST SCORE</div><div class="stat-val" id="best">0</div></div><div><div class="stat-label">BALLS LEFT</div><div class="stat-val" id="balls">3</div></div><div><div class="stat-label">MULTIPLIER</div><div class="stat-val" id="multi">×1</div></div><div><div class="stat-label">TARGETS</div><div class="stat-val" id="targets">0 / 5</div></div></div>
- <div class="status-row"><span class="pill" id="state">READY TO LAUNCH</span><span class="pill" id="nudges">3 NUDGES</span></div>
- <section id="tycoon-shop">
-<h2>🛠 BUILD YOUR OWN TABLE</h2>
-<div class="shop-summary"><div>CASH<strong id="shop-cash">$1,500</strong></div><div>BUMPERS<strong id="shop-count">0 / 20</strong></div></div>
-<p class="shop-caption">Earn cash from scores. Pick a bumper, then tap an open spot. Your layout saves automatically.</p>
-<div class="bumper-catalog">
-<button class="shop-item active" data-kind="basic"><span class="shop-orb basic">●</span><b>Classic</b><small>$350 · 150 pts</small></button>
-<button class="shop-item" data-kind="power"><span class="shop-orb power">⚡</span><b>Power</b><small>$750 · 350 pts</small></button>
-<button class="shop-item" data-kind="gold"><span class="shop-orb gold">★</span><b>Gold</b><small>$1,500 · 800 pts</small></button>
-</div>
-<p class="shop-caption" id="tycoon-message" role="status">Tap BUILD, choose a bumper, then tap the table to place it.</p>
-<div class="shop-actions"><button class="btn" id="upgrade-bumper" disabled>⬆ Upgrade selected</button><button class="btn" id="sell-bumper" disabled>↩ Sell selected</button></div>
-<button class="btn shop-done" id="done-building">▶ DONE BUILDING / PLAY</button>
-</section>
-<h2>GAME CONTROLS</h2>
- <div class="actions"><button id="launch" class="btn">● LAUNCH · SPACE</button><button id="new" class="btn">↻ NEW GAME</button><button id="pause" class="btn">Ⅱ PAUSE</button><button id="sound" class="btn">♫ SOUND ON</button><button id="nudge" class="btn">⚡ NUDGE · N</button></div>
- <h2>HOW TO PLAY</h2>
- <p><span class="keys">SPACE</span> launches. Hold <span class="keys">A</span> and <span class="keys">D</span> or arrow keys for constant flipper pressure. On touchscreens, use the bottom of the table or the two transparent flip buttons.</p>
- <h2>PRIZES</h2>
- <ul><li>3 starter bumpers, your custom bumpers, and 5 purple targets.</li><li>Four prizes: points, jackpot, extra ball and multiplier.</li><li>Collect four prizes for a 5,000 point bonus.</li><li>Three quick hits earn combo bonuses.</li><li>The open gap between flippers drains missed balls.</li></ul>
+<div id="stage"><div id="boardbox"><canvas id="board" width="720" height="1008" aria-label="Pinball Tycoon customizable arcade table"></canvas></div></div>
+<div id="top-left"><div id="wallet">💰 <span id="cash">$280</span><small>SAFE MIN $75</small></div><button id="spam" class="chip" title="Buy an extra ball">+ BALL</button></div>
+<div id="top-right"><button id="builder" class="chip">🛠 BUILD</button><button id="full" class="chip" title="Fullscreen">⛶</button><button id="menu" class="chip" aria-expanded="false" aria-controls="overlay">☰</button></div>
+<button id="mobile-launch" class="chip">↻ DROP BALL</button>
+<div id="touch"><button id="left">◀ FLIP</button><button id="right">FLIP ▶</button></div>
+<div id="pulse">A / D: FLIPPERS · B: BUILD · SPACE: EXTRA BALL · M: MENU · F: FULLSCREEN</div>
+<div id="placement-tip" hidden>SNAP BUILD: CHOOSE AN ITEM, THEN CLICK A PEG · CLICK AN OWNED ITEM TO UPGRADE OR SELL</div>
+<aside id="overlay" hidden>
+ <div class="panel-title"><div><div class="eyebrow">NEXUS ARCADE · G32</div><h1>PINBALL TYCOON V2</h1></div><button id="close" class="close">✕</button></div>
+ <div class="statgrid"><div class="stat"><span>SCORE</span><strong id="score">0</strong></div><div class="stat"><span>BEST</span><strong id="best">0</strong></div><div class="stat"><span>BALLS ACTIVE</span><strong id="active-balls">1</strong></div><div class="stat"><span>ROUND INCOME</span><strong id="income">$0</strong></div></div>
+ <div id="message">Earn slowly. Build the table you want.</div>
+ <h2>Table style</h2>
+ <div class="modegrid"><button class="mode active" data-mode="classic">CLASSIC<br>Gravity ↓</button><button class="mode" data-mode="uloop">GRAVITY U<br>↑ → ↓</button><button class="mode" data-mode="flip">FLIP FIELD<br>Rotating gravity</button></div>
+ <h2>Bumper shop — snap to pegs</h2>
+ <div class="shopgrid">
+ <button class="shop-item active" data-kind="basic"><b>🔵 Basic</b><small>Large, forgiving • $120</small><em>+ $1 per hit</em></button>
+ <button class="shop-item" data-kind="power"><b>⚡ Power</b><small>Strong bounce • $280</small><em>+ $2 per hit</em></button>
+ <button class="shop-item" data-kind="grab"><b>🧲 Grab & Roll</b><small>Grabs, spins, releases • $650</small><em>+ $3 per hit</em></button>
+ <button class="shop-item" data-kind="phase"><b>✧ Ultra Phase</b><small>Tiny, pass through • $1,050</small><em>+ $5 per hit</em></button>
+ <button class="shop-item" data-kind="multi"><b>✳ Ball Spawner</b><small>Extra ball on hit • $1,600</small><em>+ $2 per hit</em></button>
+ </div>
+ <h2>Rails — two fixed mounting points</h2>
+ <div class="actiongrid"><button id="rail-left" class="btn">LEFT RAIL · $900</button><button id="rail-right" class="btn">RIGHT RAIL · $900</button></div>
+ <p class="small">A rail captures a well-aimed ball, carries it through glowing pass-through targets, then awards a bonus at the prize button and releases it.</p>
+ <div class="statgrid"><div class="stat"><span>OWNED BUMPERS</span><strong id="owned">0 / 26</strong></div><div class="stat"><span>SELECTED</span><strong id="selection">None</strong></div></div>
+ <div class="actiongrid" style="margin-top:9px"><button id="upgrade" class="btn" disabled>⬆ UPGRADE</button><button id="sell" class="btn" disabled>↩ SELL</button><button id="move" class="btn" disabled>↔ MOVE FREE</button><button id="play" class="btn primary">▶ PLAY</button></div>
+ <h2>Ball controls</h2><div class="actiongrid"><button id="buy-ball" class="btn">+ BALL · $20</button><button id="reset-round" class="btn">↻ RESET ROUND</button><button id="sound" class="btn">♫ SOUND ON</button><button id="clear-layout" class="btn">RESET BUILD</button></div>
+ <h2>Rules</h2>
+ <ul class="help"><li>At least one ball is always in play. Drained balls respawn automatically.</li><li>Every additional ball costs money, with a maximum of six. If cash gets low, extras disappear until only one remains.</li><li>Earn just $1–$5 from standard bumper hits. Weak rounds incur a small operating cost.</li><li>Your balance never drops below $75. You can sell and upgrade bumpers.</li><li>Flippers rotate smoothly and collide with balls continuously—hold the key/button to keep one raised.</li></ul>
 </aside>
 <script>
-'use strict';
 (()=>{
-const canvas=document.getElementById('game');const ctx=canvas.getContext('2d',{alpha:false});
-const W=600,H=840,R=9,FIXED=1/180,TAU=Math.PI*2;
+'use strict';
+const canvas=document.getElementById('board'),g=canvas.getContext('2d');
+const W=600,H=840,TAU=Math.PI*2,DT=1/240,R=8,MIN_CASH=75;
 const $=id=>document.getElementById(id);
-const dom={score:$('score'),best:$('best'),balls:$('balls'),multi:$('multi'),targets:$('targets'),state:$('state'),nudges:$('nudges')};
-const palette={cyan:'#4fdaff',pink:'#ff55b6',yellow:'#ffd36d',green:'#78ffcb',purple:'#ad86ff'};
-let score=0,best=0,balls=3,level=1,bumperHits=0,targetCount=0,nudges=3,phase='ready',paused=false,mute=false,lastBumperTick=-500,combo=0;
-try{best=Number(localStorage.getItem('nexus-neon-pinball-best-v2'))||0}catch(e){}
-// The upper three are permanent starter bumpers. Build your own below!
-const bumpers=[
-{x:178,y:262,r:34,color:palette.pink,hit:-100,points:150},
-{x:367,y:251,r:34,color:palette.cyan,hit:-100,points:150},
-{x:273,y:387,r:35,color:palette.yellow,hit:-100,points:250}
-];
-const targets=[125,197,269,341,413].map((x,i)=>({x,y:167,lit:false,hit:-1,i}));
-const pegs=[{x:86,y:437,r:9},{x:476,y:438,r:9},{x:300,y:472,r:8},{x:181,y:634,r:8},{x:424,y:639,r:8}];
-const prizes=[
-{x:113,y:493,r:13,label:'BONUS',kind:'points',points:750,color:palette.green,lit:false},
-{x:284,y:543,r:13,label:'× UP',kind:'multiplier',points:0,color:palette.purple,lit:false},
-{x:473,y:511,r:13,label:'JACKPOT',kind:'points',points:2500,color:palette.yellow,lit:false},
-{x:350,y:652,r:13,label:'+ BALL',kind:'ball',points:0,color:palette.pink,lit:false}
-];
-const walls=[
- [53,137,53,650],[53,650,108,693],
- [514,137,514,649],[514,649,454,693],
- [53,137,92,94],[92,94,481,94],[481,94,514,137],
- [105,606,204,671],[359,671,462,606]
-];
-const L={px:158,py:745,len:98,angle:.19,rest:.19,up:-.65,held:false,stamp:-100,color:palette.pink};
-const RR={px:412,py:745,len:98,angle:Math.PI-.19,rest:Math.PI-.19,up:Math.PI+.65,held:false,stamp:-100,color:palette.cyan};
-let ball=null,effects=[],particles=[],tick=0,roundId=0,lastRender=performance.now(),acc=0,audio=null;
-let pointerFlips=new Map();
-function beep(freq=540,dur=.06,shape='sine'){
- if(mute)return;
- try{audio=audio||new(window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();
- let osc=audio.createOscillator(),vol=audio.createGain();osc.type=shape;osc.frequency.value=freq;vol.gain.setValueAtTime(.035,audio.currentTime);vol.gain.exponentialRampToValueAtTime(.0001,audio.currentTime+dur);osc.connect(vol);vol.connect(audio.destination);osc.start();osc.stop(audio.currentTime+dur)}catch(e){}
-}
-function sync(){updateShopUI();dom.score.textContent=score.toLocaleString();dom.best.textContent=best.toLocaleString();dom.balls.textContent=balls;dom.multi.textContent='×'+level;dom.targets.textContent=targetCount+' / 5';dom.nudges.textContent=nudges+' NUDGES';dom.state.textContent=paused?'PAUSED':phase==='over'?'GAME OVER':phase==='ready'?'READY TO LAUNCH':'BALL IN PLAY';$('pause').textContent=paused?'▶ RESUME':'Ⅱ PAUSE'}
-function addScore(v,x,y){const amount=Math.round(v*level);score+=amount;cash+=Math.max(1,Math.floor(amount*.07));effects.push({x,y,text:'+'+amount,time:1});if(score>best){best=score;try{localStorage.setItem('nexus-neon-pinball-best-v2',best)}catch(e){}}saveTycoon();sync()}
-function sparks(x,y,color){for(let i=0;i<14;i++){let a=Math.random()*TAU,p=70+Math.random()*170;particles.push({x,y,vx:Math.cos(a)*p,vy:Math.sin(a)*p,life:.33+Math.random()*.18,c:color})}}
-function newBall(){ball={x:545,y:760,vx:0,vy:0,r:R,inLane:true,active:false,trail:[],idle:0};prizes.forEach(p=>p.lit=false);phase='ready';sync()}
-function restart(){score=0;balls=3;level=1;bumperHits=0;targetCount=0;nudges=3;lastBumperTick=-500;combo=0;phase='ready';paused=buildMode;roundId=0;effects=[];particles=[];for(const t of targets){t.lit=false;t.hit=-10}for(const b of bumpers)b.hit=-10;newBall();sync()}
-function launch(){if(buildMode)return;if(phase==='over'){restart()}if(paused){paused=false}if(phase==='ready'&&ball){ball.active=true;ball.inLane=true;ball.vy=-1630;ball.vx=0;ball.trail=[];phase='playing';roundId++;beep(640,.11,'sawtooth');sync()}}
-function drain(){if(!ball)return;ball=null;balls--;beep(145,.23,'triangle');if(balls>0)newBall();else{phase='over';sync()}}
-function nudge(){if(paused||phase!=='playing'||!ball||ball.inLane||nudges<1)return;nudges--;ball.vx+=(ball.x<280?190:-190);ball.vy-=360;ball.idle=0;sparks(ball.x,ball.y,palette.green);beep(210,.08);sync()}
-function flip(side,down){const f=side==='left'?L:RR;f.held=down;$(side).classList.toggle('down',down)}
-for(const id of ['left','right']){let el=$(id);el.addEventListener('pointerdown',e=>{e.preventDefault();el.setPointerCapture(e.pointerId);flip(id,true)});for(const type of ['pointerup','pointercancel','lostpointercapture'])el.addEventListener(type,()=>flip(id,false))}
-$('launch').addEventListener('click',launch);$('new').addEventListener('click',restart);$('nudge').addEventListener('click',nudge);$('sound').addEventListener('click',()=>{mute=!mute;$('sound').textContent=mute?'♫ SOUND OFF':'♫ SOUND ON'});$('pause').addEventListener('click',()=>{if(phase==='over'||buildMode)return;paused=!paused;sync()});
-window.addEventListener('keydown',e=>{if(['Space','ArrowLeft','ArrowRight','KeyA','KeyD','KeyN','KeyP'].includes(e.code))e.preventDefault();if(e.repeat)return;if(e.code==='Space')launch();if(['ArrowLeft','KeyA'].includes(e.code))flip('left',true);if(['ArrowRight','KeyD'].includes(e.code))flip('right',true);if(e.code==='KeyN')nudge();if(e.code==='KeyP'){$('pause').click()}});
-window.addEventListener('keyup',e=>{if(['ArrowLeft','KeyA'].includes(e.code))flip('left',false);if(['ArrowRight','KeyD'].includes(e.code))flip('right',false)});
-window.addEventListener('blur',()=>{flip('left',false);flip('right',false)});
-
-const overlay=$('overlay-panel'),menuButton=$('menu-button');
-function setMenu(open){overlay.hidden=!open;menuButton.setAttribute('aria-expanded',String(open));menuButton.setAttribute('aria-label',open?'Hide floating game controls':'Show floating game controls');}
-menuButton.addEventListener('click',()=>setMenu(overlay.hidden));
-$('panel-close').addEventListener('click',()=>setMenu(false));
-document.addEventListener('pointerdown',e=>{if(!overlay.hidden&&!overlay.contains(e.target)&&!menuButton.contains(e.target))setMenu(false)});
-$('fullscreen-button').addEventListener('click',async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen()}catch(e){$('fullscreen-button').title='Open the preview in a new browser tab to use fullscreen'}});
-document.addEventListener('fullscreenchange',()=>$('fullscreen-button').textContent=document.fullscreenElement?'⤢':'⛶');
-window.addEventListener('keydown',e=>{if(e.code==='Escape')setMenu(false);if(e.code==='KeyM'&&!e.repeat){e.preventDefault();setMenu(overlay.hidden)}if(e.code==='KeyF'&&!e.repeat&&e.target.tagName!=='INPUT'){$('fullscreen-button').click()}});
-
-
-const bumperTypes={
- basic:{cost:350,r:19,color:'#58dfff',points:150,kick:.08},
- power:{cost:750,r:23,color:'#ff68bd',points:350,kick:.26},
- gold:{cost:1500,r:25,color:'#ffdb69',points:800,kick:.16}
+const COLORS={blue:'#4be2ff',pink:'#ff6cbb',gold:'#ffdc6d',green:'#75fbc8',purple:'#b58bff'};
+const types={
+ basic:{cost:120,r:28,points:1,score:100,bounce:1.13,color:COLORS.blue},
+ power:{cost:280,r:22,points:2,score:190,bounce:1.67,color:COLORS.pink},
+ grab:{cost:650,r:17,points:3,score:300,bounce:1.0,color:COLORS.purple},
+ phase:{cost:1050,r:11,points:5,score:500,bounce:0,color:COLORS.gold},
+ multi:{cost:1600,r:15,points:2,score:230,bounce:1.1,color:COLORS.green}
 };
-let cash=1500,playerBumpers=[],chosenKind='basic',selectedPlacedId=null,buildMode=false,pausedBeforeBuild=false,buildHover=null,nextBumperId=1;
-function saveTycoon(){try{localStorage.setItem('nexus-g32-tycoon-v1',JSON.stringify({cash,bumps:playerBumpers.map(b=>({id:b.id,x:b.x,y:b.y,kind:b.kind,level:b.level}))}))}catch(e){}}
-
-
-function canPlace(x,y,kind){
- const t=bumperTypes[kind];if(!t||!Number.isFinite(x)||!Number.isFinite(y))return false;
- if(x<76+t.r||x>501-t.r||y<220+t.r||y>649-t.r)return false;
- for(const b of bumpers)if(Math.hypot(x-b.x,y-b.y)<t.r+b.r+14)return false;
- for(const b of playerBumpers)if(Math.hypot(x-b.x,y-b.y)<t.r+bumperTypes[b.kind].r+13)return false;
- for(const p of prizes)if(Math.hypot(x-p.x,y-p.y)<t.r+p.r+15)return false;
- for(const p of pegs)if(Math.hypot(x-p.x,y-p.y)<t.r+p.r+13)return false;
- if(ball&&!ball.inLane&&Math.hypot(x-ball.x,y-ball.y)<t.r+ball.r+14)return false;
- return true;
-}
-function loadTycoon(){
- try{
-  const d=JSON.parse(localStorage.getItem('nexus-g32-tycoon-v1')||'null');
-  if(!d)return;
-  if(Number.isFinite(d.cash))cash=Math.max(0,Math.floor(d.cash));
-  for(const b of (Array.isArray(d.bumps)?d.bumps.slice(0,20):[])){
-   if(!bumperTypes[b.kind]||!Number.isFinite(b.x)||!Number.isFinite(b.y))continue;
-   const c={id:Number.isFinite(b.id)?Math.floor(b.id):nextBumperId++,x:b.x,y:b.y,kind:b.kind,level:Math.max(1,Math.min(3,Math.floor(b.level)||1)),hit:-100};
-   if(canPlace(c.x,c.y,c.kind))playerBumpers.push(c);
-  }
-  nextBumperId=Math.max(nextBumperId,1,...playerBumpers.map(b=>b.id+1));
- }catch(e){}
-}
-
-
-function shopNote(t){$('tycoon-message').textContent=t}
-function updateShopUI(){
- if(!$('hud-cash'))return;
- $('hud-cash').textContent='$'+cash.toLocaleString();$('shop-cash').textContent='$'+cash.toLocaleString();$('shop-count').textContent=playerBumpers.length+' / 20';
- $('hud-mode').textContent=buildMode?'BUILD':'PLAY';
- $('build-button').classList.toggle('active',buildMode);
- $('build-button').textContent=buildMode?'✓ PLAY':'🛠 BUILD';$('build-hint').hidden=!buildMode;
- for(const el of document.querySelectorAll('.shop-item'))el.classList.toggle('active',el.dataset.kind===chosenKind);
- const b=playerBumpers.find(p=>p.id===selectedPlacedId);
- const price=b?Math.ceil(bumperTypes[b.kind].cost*.65*b.level):0;
- $('upgrade-bumper').disabled=!buildMode||!b||b.level>=3||cash<price;
- $('sell-bumper').disabled=!buildMode||!b;
- $('upgrade-bumper').textContent=b?'⬆ Level '+(b.level+1)+' ($'+price+')':'⬆ Upgrade selected';
- $('sell-bumper').textContent=b?'↩ Sell ($'+Math.floor(bumperTypes[b.kind].cost*(.6+.25*(b.level-1)))+')':'↩ Sell selected';
-}
-
-
-function selectPlaced(id){
- selectedPlacedId=id;
- const b=playerBumpers.find(p=>p.id===id);
- if(b)shopNote('Selected '+b.kind+' bumper (level '+b.level+'). Upgrade or sell it.');
- updateShopUI();setMenu(true);
-}
-function handleBuildTap(x,y){
- if(!buildMode)return;
- const found=[...playerBumpers].reverse().find(b=>Math.hypot(b.x-x,b.y-y)<bumperTypes[b.kind].r+12);
- if(found){selectPlaced(found.id);return}
- if(!canPlace(x,y,chosenKind)){shopNote('Blocked spot! Try an open space away from obstacles.');return}
- if(playerBumpers.length>=20){shopNote('Table full: maximum 20 custom bumpers.');setMenu(true);return}
- const cfg=bumperTypes[chosenKind];
- if(cash<cfg.cost){shopNote('Need $'+(cfg.cost-cash)+' more. Play to earn!');setMenu(true);return}
- cash-=cfg.cost;playerBumpers.push({id:nextBumperId++,x:Math.round(x),y:Math.round(y),kind:chosenKind,level:1,hit:-100});
- selectedPlacedId=null;saveTycoon();sync();sparks(x,y,cfg.color);beep(690,.09);
- shopNote('Placed '+chosenKind+' for $'+cfg.cost+'. Click to place another!');
-}
-function setBuildMode(on){
- if(on===buildMode)return;buildMode=on;
- if(on){pausedBeforeBuild=paused;paused=true;flip('left',false);flip('right',false);shopNote('Select a type, then click the table.');setMenu(true)}
- else{paused=pausedBeforeBuild;buildHover=null;selectedPlacedId=null;shopNote('Playing! Score points to earn more cash.');setMenu(false)}
- updateShopUI();sync();
-}
-$('build-button').addEventListener('click',()=>setBuildMode(!buildMode));
-$('done-building').addEventListener('click',()=>setBuildMode(false));
-for(const el of document.querySelectorAll('.shop-item'))el.addEventListener('click',()=>{
- chosenKind=el.dataset.kind;selectedPlacedId=null;
- if(!buildMode)setBuildMode(true);
- shopNote('Placing '+chosenKind+' for $'+bumperTypes[chosenKind].cost+'. Tap a clear space.');
- updateShopUI();setMenu(false)
-});
-$('upgrade-bumper').addEventListener('click',()=>{
- const b=playerBumpers.find(p=>p.id===selectedPlacedId);if(!buildMode||!b||b.level>=3)return;
- const price=Math.ceil(bumperTypes[b.kind].cost*.65*b.level);
- if(cash<price){shopNote('Earn $'+(price-cash)+' more first.');return}
- cash-=price;b.level++;saveTycoon();sync();shopNote('Upgraded to level '+b.level+'!');
-});
-$('sell-bumper').addEventListener('click',()=>{
- const at=playerBumpers.findIndex(p=>p.id===selectedPlacedId);if(at<0||!buildMode)return;
- const b=playerBumpers[at],refund=Math.floor(bumperTypes[b.kind].cost*(.6+.25*(b.level-1)));
- playerBumpers.splice(at,1);cash+=refund;selectedPlacedId=null;saveTycoon();sync();shopNote('Sold for $'+refund+'.');
-});
-canvas.addEventListener('pointermove',e=>{
- if(!buildMode)return;const r=canvas.getBoundingClientRect();
- buildHover={x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height};
-});
-canvas.addEventListener('pointerleave',()=>buildHover=null);
-window.addEventListener('keydown',e=>{if(e.code==='KeyB'&&!e.repeat){e.preventDefault();setBuildMode(!buildMode)}});
-loadTycoon();
-
-canvas.addEventListener('pointerdown',e=>{e.preventDefault();canvas.setPointerCapture(e.pointerId);const bounds=canvas.getBoundingClientRect(),x=(e.clientX-bounds.left)*W/bounds.width,y=(e.clientY-bounds.top)*H/bounds.height;if(buildMode){handleBuildTap(x,y);return}if(phase!=='playing'){launch();return}if(y>410){const side=x<W/2?'left':'right';pointerFlips.set(e.pointerId,side);flip(side,true)}});
-for(const eventName of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(eventName,e=>{const side=pointerFlips.get(e.pointerId);pointerFlips.delete(e.pointerId);if(side)flip(side,[...pointerFlips.values()].includes(side))});
-function segment(ax,ay,bx,by,boost=1.0,onCollision=null){
- let dx=bx-ax,dy=by-ay,denom=dx*dx+dy*dy,t=Math.max(0,Math.min(1,((ball.x-ax)*dx+(ball.y-ay)*dy)/denom)),px=ax+t*dx,py=ay+t*dy,nx=ball.x-px,ny=ball.y-py,dist=Math.hypot(nx,ny),min=ball.r+3;
- if(dist>=min)return false;
- if(dist<.001){nx=-dy;ny=dx;dist=Math.hypot(nx,ny)}nx/=dist;ny/=dist;
- ball.x=px+nx*min;ball.y=py+ny*min;
- let into=ball.vx*nx+ball.vy*ny;if(into<0){ball.vx-=1.7*into*nx;ball.vy-=1.7*into*ny;ball.vx*=boost;ball.vy*=boost;if(onCollision)onCollision(t)}
- return true;
-}
-function pegBounce(x,y,r,boost=1){let dx=ball.x-x,dy=ball.y-y,dist=Math.hypot(dx,dy),limit=r+ball.r;if(dist>=limit)return false;let nx=dx/(dist||1),ny=dy/(dist||1);ball.x=x+nx*(limit+1);ball.y=y+ny*(limit+1);let v=ball.vx*nx+ball.vy*ny;if(v<0){ball.vx-=1.9*v*nx;ball.vy-=1.9*v*ny;ball.vx*=boost;ball.vy*=boost}return true}
-// One flipper-angle update per fixed physics step. The ball collides
-// with a solid moving paddle, not a magic repeated push from below.
-function flipper(f){
- const previous=f.angle;
- f.angle+=((f.held?f.up:f.rest)-f.angle)*.21;
- const omega=(f.angle-previous)/FIXED;
- const dx=Math.cos(f.angle)*f.len,dy=Math.sin(f.angle)*f.len;
- const t=Math.max(0,Math.min(1,((ball.x-f.px)*dx+(ball.y-f.py)*dy)/(f.len*f.len)));
- const cx=f.px+t*dx,cy=f.py+t*dy;
- const offsetX=ball.x-cx,offsetY=ball.y-cy;
- const distance=Math.hypot(offsetX,offsetY),limit=ball.r+9;
- if(distance>=limit)return;
- if(offsetY>ball.r+3&&ball.y>f.py+4)return;
- let nx,ny;
- if(distance<.0001){nx=0;ny=-1}else{nx=offsetX/distance;ny=offsetY/distance}
- ball.x=cx+nx*(limit+.15);ball.y=cy+ny*(limit+.15);
- const sx=-dy*t*omega,sy=dx*t*omega;
- const approach=(ball.vx-sx)*nx+(ball.vy-sy)*ny;
- if(approach<0){const impulse=Math.min(1500,-approach*1.43);ball.vx+=impulse*nx;ball.vy+=impulse*ny}
- // One deliberate hit per contact, with a short cooldown. The paddle
- // stays raised as long as the button/key is held (no repeat-trigger bug).
- if(f.held&&tick-f.stamp>18&&ball.y<f.py+19&&ball.vy>-570){
-   f.stamp=tick;
-   ball.vy=-Math.max(740,Math.min(1280,Math.abs(ball.vy)*.7+460));
-   ball.vx+=(f===L?1:-1)*(100+150*t);
-   sparks(ball.x,ball.y,f.color);beep(410,.035,'square');
+const pegGrid=[];for(let row=0;row<7;row++)for(let col=0;col<7;col++)pegGrid.push({col,row,x:102+col*63,y:187+row*68,key:col+'-'+row});
+const starter=[{x:228,y:323,r:27,kind:'basic',score:80,points:1},{x:353,y:323,r:25,kind:'power',score:150,points:1}];
+const railPaths={
+ left:[[71,497],[69,390],[67,256],[81,170],[160,132],[250,132],[314,150],[381,179],[431,239],[438,309],[384,351]],
+ right:[[482,497],[483,381],[485,254],[465,172],[393,135],[314,131],[250,147],[205,184],[179,246],[193,317],[249,359]]
+};
+const uPath=[[112,675],[108,540],[108,392],[108,244],[133,164],[225,110],[352,110],[445,168],[466,246],[466,402],[466,550]];
+let wallet=280,score=0,best=0,income=0,roundHits=0,mode='classic',isBuild=false,selectedKind='basic',selected=null,
+  movingId=null,parts=[],rails={left:false,right:false},idCounter=1,balls=[],tick=0,clock=0,pausedByMenu=false,
+  pointerMap=new Map(),particles=[],popups=[],soundOn=true,ctxAudio=null,statsLog=[],railCooldown=0,phaseTimer=0,spawnCooldown=0;
+let savePending=false;
+const left={x:195,y:734,len:95,rest:.19,up:-.62,a:.19,omega:0,hold:false},right={x:382,y:734,len:95,rest:Math.PI-.19,up:Math.PI+.62,a:Math.PI-.19,omega:0,hold:false};
+const storageKey='nexus-pinball-tycoon-v2';
+function save(){try{localStorage.setItem(storageKey,JSON.stringify({wallet,score,best,mode,parts:parts.map(b=>({id:b.id,index:b.index,kind:b.kind,level:b.level})),rails,idCounter}))}catch(e){}}
+function load(){try{const d=JSON.parse(localStorage.getItem(storageKey)||'null');if(!d)return;wallet=Number.isFinite(d.wallet)?Math.max(MIN_CASH,Math.floor(d.wallet)):wallet;best=Number.isFinite(d.best)?d.best:best;score=Number.isFinite(d.score)?d.score:score;mode=['classic','uloop','flip'].includes(d.mode)?d.mode:mode;rails={left:!!d.rails?.left,right:!!d.rails?.right};if(Array.isArray(d.parts)){for(const b of d.parts.slice(0,26)){if(!types[b.kind]||!Number.isInteger(b.index)||b.index<0||b.index>=pegGrid.length)continue;if(parts.some(p=>p.index===b.index))continue;parts.push({id:Math.max(1,Number(b.id)||idCounter++),index:b.index,kind:b.kind,level:Math.max(1,Math.min(3,Number(b.level)||1)),hit:0,cooldown:0})}}idCounter=Math.max(Number(d.idCounter)||1,1,...parts.map(p=>p.id+1))}catch(e){}}
+function colorFor(k){return types[k].color}
+function sound(hz=420,length=.045){if(!soundOn)return;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return;ctxAudio??=new A();if(ctxAudio.state==='suspended')ctxAudio.resume();const o=ctxAudio.createOscillator(),a=ctxAudio.createGain();o.type='triangle';o.frequency.value=hz;a.gain.setValueAtTime(.045,ctxAudio.currentTime);a.gain.exponentialRampToValueAtTime(.0001,ctxAudio.currentTime+length);o.connect(a);a.connect(ctxAudio.destination);o.start();o.stop(ctxAudio.currentTime+length)}catch(e){}}
+function message(s){$('message').textContent=s}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function cashChange(v){wallet=Math.max(MIN_CASH,Math.floor(wallet+v));savePending=true}
+function notify(t,x,y,c='#baffeb'){popups.push({t,x,y,c,time:1.2});if(popups.length>40)popups.shift()}
+function spark(x,y,c){for(let i=0;i<9;i++){const a=Math.random()*TAU,sp=50+Math.random()*200;particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,t:.3+Math.random()*.25,c})}}
+function addPoints(points,earn,x,y,c=COLORS.blue){score+=points;best=Math.max(score,best);if(earn){cashChange(earn);income+=earn;roundHits++}notify('+'+points+(earn?' / $'+earn:''),x,y,c);spark(x,y,c);savePending=true}
+function emptyBall(){return {x:0,y:0,vx:0,vy:0,r:R,modePath:null,rail:false,catchUntil:0,cooldown:0,hits:0,earned:0}}
+function pathSegments(points){const distances=[],total=points.reduce((sum,p,i)=>{if(i){const q=points[i-1],v=Math.hypot(p[0]-q[0],p[1]-q[1]);distances.push(v);return sum+v}return sum},0);return {points,distances,total}}
+const uRail=pathSegments(uPath),leftRail=pathSegments(railPaths.left),rightRail=pathSegments(railPaths.right);
+function posOn(path,d){let leftDist=d;for(let i=0;i<path.distances.length;i++){const len=path.distances[i];if(leftDist<=len||i===path.distances.length-1){const a=path.points[i],b=path.points[i+1],t=clamp(leftDist/len,0,1),dx=(b[0]-a[0])/len,dy=(b[1]-a[1])/len;return {x:a[0]+(b[0]-a[0])*t,y:a[1]+(b[1]-a[1])*t,dx,dy,segment:i}}leftDist-=len}return {x:0,y:0,dx:0,dy:1,segment:0}}
+function attach(b,path,kind,side){b.modePath={path,at:0,kind,side,speed:kind==='u'?530:610};let p=posOn(path,0);b.x=p.x;b.y=p.y;b.vx=0;b.vy=0}
+function spawn(initial=false){const b=emptyBall();if(mode==='uloop'){attach(b,uRail,'u','left')}else{b.x=initial?128:170+Math.random()*230;b.y=142;b.vx=(Math.random()-.5)*240;b.vy=115}balls.push(b);return b}
+function ensureBall(){if(balls.length===0)spawn(true)}
+function dropBall(extra=false){if(extra){if(balls.length>=6){message('Six balls is the maximum.');return false}const cost=20+10*(balls.length-1);if(wallet-cost<MIN_CASH){message('Keep the $75 safety reserve. Score more to add a ball!');return false}cashChange(-cost)}spawn(false);updateUI();return true}
+function setback(){const upkeep=Math.max(2,Math.ceil(parts.reduce((v,p)=>v+types[p.kind].cost,0)/700)+(rails.left?2:0)+(rails.right?2:0));if(income<upkeep){const fee=Math.min(18,Math.max(1,upkeep-income));cashChange(-fee);notify('-$'+fee+' upkeep',295,462,COLORS.pink)}else if(income>upkeep*4){notify('PROFIT ROUND!',300,430,COLORS.green)}income=0;roundHits=0;savePending=true;reduceExtras()}
+function reduceExtras(){if(wallet<=100&&balls.length>1){balls=balls.slice(0,1);message('Low funds: extra balls removed, but your free ball stays.')}ensureBall()}
+function removeBall(index){balls.splice(index,1);setback();ensureBall();updateUI()}
+function floorRay(){return mode==='flip'?Math.sin(phaseTimer*.28):0}
+function gravity(b){if(mode==='flip'){const a=phaseTimer*.24;return {x:Math.sin(a)*730,y:Math.cos(a)*730}}return {x:0,y:910}}
+function updateFlippers(dt){for(const f of [left,right]){const target=f.hold?f.up:f.rest;const delta=clamp(target-f.a,-11.5*dt,11.5*dt);f.a+=delta;f.omega=delta/dt}}
+function resolveCircle(b,x,y,r,bounce){const dx=b.x-x,dy=b.y-y,d=Math.hypot(dx,dy),lim=b.r+r;if(d>=lim)return false;const nx=dx/(d||1),ny=dy/(d||1);b.x=x+nx*(lim+.25);b.y=y+ny*(lim+.25);const dot=b.vx*nx+b.vy*ny;if(dot<0){b.vx-=(1+bounce)*dot*nx;b.vy-=(1+bounce)*dot*ny}return true}
+function hitBumper(b,o,x,y){const t=types[o.kind],radius=t.r;
+ if(o.cooldown>clock)return;
+ if(o.kind==='phase'){
+  if(Math.hypot(b.x-x,b.y-y)<radius+b.r){o.cooldown=clock+.18;addPoints(t.score*o.level,t.points*o.level,x,y,t.color);sound(900,.035)}
+  return;
  }
- const speed=Math.hypot(ball.vx,ball.vy);
- if(speed>1740){ball.vx*=1740/speed;ball.vy*=1740/speed}
-}
-function update(dt){tick++;
- effects=effects.filter(e=>(e.time-=dt)>0);for(const e of effects)e.y-=34*dt;
- particles=particles.filter(p=>(p.life-=dt)>0);for(const p of particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=380*dt}
- if(phase!=='playing'||!ball||!ball.active)return;
- const previousX=ball.x,previousY=ball.y;
- ball.vy+=805*dt;ball.vx*=.9996;
- let maxSpeed=1900,speed=Math.hypot(ball.vx,ball.vy);if(speed>maxSpeed){ball.vx*=maxSpeed/speed;ball.vy*=maxSpeed/speed}
- ball.x+=ball.vx*dt;ball.y+=ball.vy*dt;
- if(ball.inLane){
-  ball.x=Math.max(535,Math.min(557,ball.x));
-  if(ball.y<=114){ball.inLane=false;ball.x=486;ball.y=145;ball.vx=-310;ball.vy=180;sparks(ball.x,ball.y,palette.green);beep(950,.07)}
-  if(ball.y>860){drain()}return;
- }
- if(ball.y<100){ball.y=100;ball.vy=Math.abs(ball.vy)*.87}
- if(ball.x<62){ball.x=62;ball.vx=Math.abs(ball.vx)*.88}
- if(ball.x>505){ball.x=505;ball.vx=-Math.abs(ball.vx)*.88}
- for(const w of walls){segment(w[0],w[1],w[2],w[3],1,w===walls[7]||w===walls[8]?()=>{ball.vy-=310;beep(290,.05)}:null)}
- for(const b of bumpers){
- const hit=pegBounce(b.x,b.y,b.r,1.14);
- if(hit&&tick-b.hit>24){
-  b.hit=tick;addScore(b.points,b.x,b.y);bumperHits++;
-  combo=tick-lastBumperTick<230?combo+1:1;lastBumperTick=tick;
-  if(combo>=3){addScore(350,b.x,b.y-32);effects.push({x:b.x,y:b.y-54,text:'COMBO!',time:.9});combo=0}
-  if(bumperHits%7===0){level=Math.min(5,level+1);effects.push({x:277,y:315,text:'MULTIPLIER ×'+level,time:1.5})}
-  sparks(b.x,b.y,b.color);beep(450+(b.x%150)*3,.045)
+ if(o.kind==='grab'&&Math.hypot(b.x-x,b.y-y)<radius+b.r){o.cooldown=clock+.55;
+  addPoints(t.score*o.level,t.points*o.level,x,y,t.color);
+  b.catchUntil=clock+.28;b.x=x;b.y=y;b.vx=0;b.vy=0;b.grabSide=b.x<300?1:-1;b.grabOriginX=x;b.grabOriginY=y;sound(450,.11);return}
+ if(resolveCircle(b,x,y,radius,t.bounce)){if(o.cooldown>clock)return;o.cooldown=clock+.14;
+  addPoints(t.score*o.level,t.points*o.level,x,y,t.color);
+  if(o.kind==='multi'&&balls.length<6&&spawnCooldown<clock&&wallet>95){spawnCooldown=clock+.9;spawn();notify('MULTIBALL!',x,y-20,COLORS.green)}
+  sound(o.kind==='power'?720:470,.045)
  }
 }
- for(const b of playerBumpers){
- const cfg=bumperTypes[b.kind];
- const hit=pegBounce(b.x,b.y,cfg.r,1.1+cfg.kick);
- if(hit&&tick-b.hit>24){
-  b.hit=tick;addScore(Math.round(cfg.points*(1+.55*(b.level-1))),b.x,b.y);
-  bumperHits++;sparks(b.x,b.y,cfg.color);beep(540+cfg.points,.04);
-  if(bumperHits%7===0){level=Math.min(6,level+1);effects.push({x:b.x,y:b.y-32,text:'MULTIPLIER ×'+level,time:1.2})}
- }
+function wallBall(b){if(b.x<57){b.x=57;if(b.vx<0)b.vx=-b.vx*.82}if(b.x>511){b.x=511;if(b.vx>0)b.vx=-b.vx*.82}if(b.y<97){b.y=97;if(b.vy<0)b.vy=-b.vy*.82}
+ // Pegs are attachment holes, not physical obstacles unless occupied.
+ // Two triangular guides lead the ball toward flippers.
+ segmentBall(b,61,655,159,700,6,.9);
+ segmentBall(b,506,655,410,700,6,.9)
 }
-for(const p of pegs)pegBounce(p.x,p.y,p.r,1.04);
- for(const p of prizes){
-  const hit=pegBounce(p.x,p.y,p.r,1.12);
-  if(hit&&!p.lit){
-    p.lit=true;sparks(p.x,p.y,p.color);beep(940,.09);
-    if(p.kind==='points')addScore(p.points,p.x,p.y-24);
-    else if(p.kind==='multiplier'){level=Math.min(6,level+1);effects.push({x:p.x,y:p.y-25,text:'MULTIPLIER UP!',time:1.3});sync()}
-    else if(p.kind==='ball'){balls=Math.min(5,balls+1);effects.push({x:p.x,y:p.y-25,text:'EXTRA BALL!',time:1.3});sync()}
-    if(prizes.every(q=>q.lit)){addScore(5000,287,358);effects.push({x:287,y:327,text:'ALL PRIZES +5000!',time:1.6});prizes.forEach(q=>q.lit=false)}
-  }
- }
- for(const t of targets){if(!t.lit&&Math.abs(ball.x-t.x)<19&&Math.abs(ball.y-t.y)<19){t.lit=true;targetCount++;addScore(250,t.x,t.y);sparkleTarget(t);beep(900,.07);if(targetCount===5){addScore(2000,265,230);targets.forEach(x=>x.lit=false);targetCount=0;level=Math.min(5,level+1);effects.push({x:270,y:232,text:'TARGET BANK +2000',time:1.5});beep(1120,.15)}sync()}}
- flipper(L);flipper(RR);
- let sp=Math.hypot(ball.vx,ball.vy);ball.idle=sp<50?ball.idle+dt:0;
- if(ball.idle>1.1){ball.vy=-390;ball.vx=(ball.x<285?220:-220);ball.idle=0}
- if(ball.y>854){drain();return}
- if(tick%5===0){ball.trail.push({x:ball.x,y:ball.y});if(ball.trail.length>14)ball.trail.shift()}
- if(Math.abs(ball.x-previousX)+Math.abs(ball.y-previousY)===0)ball.idle+=dt;
+function segmentBall(b,x1,y1,x2,y2,r,restitution){const dx=x2-x1,dy=y2-y1,n=dx*dx+dy*dy,t=clamp(((b.x-x1)*dx+(b.y-y1)*dy)/n,0,1),cx=x1+t*dx,cy=y1+t*dy,ox=b.x-cx,oy=b.y-cy,d=Math.hypot(ox,oy),limit=b.r+r;
+ if(d>=limit)return false;const nx=ox/(d||1),ny=oy/(d||1);b.x=cx+nx*(limit+.2);b.y=cy+ny*(limit+.2);const towards=b.vx*nx+b.vy*ny;if(towards<0){b.vx-=(1+restitution)*towards*nx;b.vy-=(1+restitution)*towards*ny}return true}
+function flipperBall(b,f){const dx=Math.cos(f.a)*f.len,dy=Math.sin(f.a)*f.len;
+ const t=clamp(((b.x-f.x)*dx+(b.y-f.y)*dy)/(f.len*f.len),0,1),cx=f.x+dx*t,cy=f.y+dy*t,ox=b.x-cx,oy=b.y-cy,d=Math.hypot(ox,oy),lim=b.r+11;
+ if(d>=lim||b.y>f.y+25)return;
+ let nx=ox/(d||1),ny=oy/(d||1);if(d<.00001){nx=0;ny=-1}
+ b.x=cx+nx*(lim+.3);b.y=cy+ny*(lim+.3);
+ const surfaceX=-dy*t*f.omega,surfaceY=dx*t*f.omega;
+ const into=(b.vx-surfaceX)*nx+(b.vy-surfaceY)*ny;
+ if(into<0){const impulse=clamp(-(1+1.12)*into,0,1550);b.vx+=impulse*nx;b.vy+=impulse*ny;
+ if(Math.abs(f.omega)>1&&f.hold){b.vy=Math.min(b.vy,-640);b.vx+=(f===left?1:-1)*80;sound(310,.03)}}
 }
-function sparkleTarget(t){sparks(t.x,t.y,palette.purple)}
-function glimmerCircle(x,y,r,color){ctx.save();ctx.shadowColor=color;ctx.shadowBlur=22;ctx.strokeStyle=color;ctx.lineWidth=5;ctx.beginPath();ctx.arc(x,y,r,0,TAU);ctx.stroke();ctx.shadowBlur=0;ctx.globalAlpha=.25;ctx.fillStyle=color;ctx.beginPath();ctx.arc(x,y,r-4,0,TAU);ctx.fill();ctx.restore()}
-function line(x1,y1,x2,y2,color,width=4,glow=12){ctx.save();ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle=color;ctx.lineWidth=width;ctx.shadowColor=color;ctx.shadowBlur=glow;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.restore()}
+function advancePath(b,dt){const ride=b.modePath;if(!ride)return false;ride.at+=ride.speed*dt;const p=posOn(ride.path,ride.at);b.x=p.x;b.y=p.y;if(ride.kind==='u'){b.gravityDirection=p.dx>0.5?'RIGHT':p.dy<-.4?'UP':'DOWN'}if(ride.at>=ride.path.total){b.modePath=null;b.x=p.x;b.y=p.y;b.vx=p.dx*490-(ride.kind==='u'?260:40);b.vy=Math.max(130,p.dy*480);
+ if(ride.kind==='rail'){const reward=15;cashChange(reward);addPoints(1800,0,b.x,b.y,COLORS.gold);notify('RAIL PRIZE +$'+reward,b.x,b.y-32,COLORS.gold);sound(1030,.16)}
+ return true}return true}
+function tryRail(b){if(b.rail||b.modePath||clock<railCooldown)return;
+ for(const side of ['left','right']){if(!rails[side])continue;const entry=side==='left'?railPaths.left[0]:railPaths.right[0];if(Math.hypot(b.x-entry[0],b.y-entry[1])<23&&b.vy<200){attach(b,side==='left'?leftRail:rightRail,'rail',side);railCooldown=clock+.55;sound(790,.06);return}}
+}
+function advanceBall(b,dt){
+ if(b.modePath){advancePath(b,dt);return}
+ if(b.catchUntil>clock){b.x=b.grabOriginX+Math.sin((b.catchUntil-clock)*31)*13;b.y=b.grabOriginY;return}
+ if(b.catchUntil&&b.catchUntil<=clock){b.catchUntil=0;b.vx=(b.grabSide||1)*540;b.vy=-490}
+ const force=gravity(b);b.vx+=force.x*dt;b.vy+=force.y*dt;
+ const speed=Math.hypot(b.vx,b.vy),top=970;if(speed>top){b.vx*=top/speed;b.vy*=top/speed}
+ b.x+=b.vx*dt;b.y+=b.vy*dt;
+ wallBall(b);
+ for(const fixed of starter){if(resolveCircle(b,fixed.x,fixed.y,fixed.r,1.23)){if(!fixed.cooldown||fixed.cooldown<clock){fixed.cooldown=clock+.15;addPoints(fixed.score,fixed.points,fixed.x,fixed.y,COLORS.blue);sound(560,.03)}}}
+ for(const o of parts){const p=pegGrid[o.index];hitBumper(b,o,p.x,p.y)}
+ flipperBall(b,left);flipperBall(b,right);
+ tryRail(b)
+}
+function canBuild(index,kind,ignoreId=null){const p=pegGrid[index],t=types[kind];if(!p||!t)return false;
+ if(p.x-t.r<71||p.x+t.r>495||p.y-t.r<161||p.y+t.r>655)return false;
+ if(starter.some(s=>Math.hypot(s.x-p.x,s.y-p.y)<s.r+t.r+8))return false;
+ for(const b of parts){if(b.id===ignoreId)continue;const q=pegGrid[b.index];if(Math.hypot(q.x-p.x,q.y-p.y)<t.r+types[b.kind].r+9)return false}
+ if(rails.left&&p.col===0&&p.row>=2&&p.row<=5)return false;
+ if(rails.right&&p.col===6&&p.row>=2&&p.row<=5)return false;
+ return true
+}
+function selectedPart(){return parts.find(p=>p.id===selected)}
+function costUpgrade(b){return Math.round(types[b.kind].cost*(b.level===1?.7:1.1))}
+function refreshShop(){const b=selectedPart();
+ $('cash').textContent='$'+wallet.toLocaleString();
+ $('score').textContent=score.toLocaleString();$('best').textContent=best.toLocaleString();
+ $('income').textContent='$'+income;$('active-balls').textContent=balls.length;$('owned').textContent=parts.length+'/26';
+ $('selection').textContent=b?b.kind.toUpperCase()+' L'+b.level:selected?.startsWith('rail')?selected.toUpperCase():'None';
+ $('builder').textContent=isBuild?'✓ PLAY':'🛠 BUILD';$('builder').classList.toggle('active',isBuild);$('placement-tip').hidden=!isBuild;
+ for(const el of document.querySelectorAll('.shop-item'))el.classList.toggle('active',el.dataset.kind===selectedKind);
+ for(const el of document.querySelectorAll('.mode'))el.classList.toggle('active',el.dataset.mode===mode);
+ for(const side of ['left','right'])$('rail-'+side).textContent=rails[side]?side.toUpperCase()+' RAIL ✓ OWNED':side.toUpperCase()+' RAIL · $900';
+ $('upgrade').disabled=!isBuild||!b||b.level>=3||wallet-costUpgrade(b)<MIN_CASH;
+ $('upgrade').textContent=b&&b.level<3?'⬆ UPGRADE $'+costUpgrade(b):'⬆ UPGRADE';
+ $('sell').disabled=!isBuild||!b;
+ $('move').disabled=!isBuild||!b;
+ $('move').textContent=movingId===b?.id?'TAP EMPTY PEG':'↔ MOVE FREE';
+ $('buy-ball').textContent='+ BALL · $'+(20+10*(balls.length-1));
+ $('spam').textContent='+ BALL ('+balls.length+')';
+}
+function toggleBuild(to){isBuild=to;movingId=null;selected=null;refreshShop();if(isBuild){showMenu(true);message('Select an item, then tap a glowing empty peg to snap it into place.')}else{showMenu(false);message('Play mode! Your balls resume moving.')} }
+function showMenu(visible){$('overlay').hidden=!visible;$('menu').setAttribute('aria-expanded',String(visible))}
+function selectPeg(index){
+ const existing=parts.find(b=>b.index===index);
+ if(existing){selected=existing.id;movingId=null;message('Selected '+existing.kind+' level '+existing.level+'. Upgrade, sell or move it.');showMenu(true);refreshShop();return}
+ if(movingId){const part=selectedPart();if(part&&canBuild(index,part.kind,part.id)){part.index=index;movingId=null;message('Bumper moved.');save();refreshShop()}else message('That peg is blocked.');return}
+ if(parts.length>=26){message('Maximum 26 purchased bumpers.');showMenu(true);return}
+ if(!canBuild(index,selectedKind)){message('That peg is too close to something else. Pick another.');return}
+ const t=types[selectedKind];if(wallet-t.cost<MIN_CASH){message('Not enough money. You must keep the $75 reserve.');showMenu(true);return}
+ cashChange(-t.cost);parts.push({id:idCounter++,kind:selectedKind,index,level:1,cooldown:0});selected=null;sound(800,.08);message('Placed '+selectedKind+' on peg '+pegGrid[index].key+'.');refreshShop();save()
+}
+function nearestPeg(x,y){let index=-1,distance=29;for(let i=0;i<pegGrid.length;i++){const p=pegGrid[i],d=Math.hypot(x-p.x,y-p.y);if(d<distance){distance=d;index=i}}return index}
+function chooseMode(value){if(!['classic','uloop','flip'].includes(value))return;mode=value;balls=[];ensureBall();message(value==='uloop'?'Gravity U: ball climbs, curves across the roof, then descends.':value==='flip'?'Flip Field: gravity slowly rotates during play.':'Classic downward gravity.');save();refreshShop()}
+$('builder').onclick=()=>toggleBuild(!isBuild);$('play').onclick=()=>toggleBuild(false);
+$('menu').onclick=()=>showMenu($('overlay').hidden);$('close').onclick=()=>showMenu(false);
+$('full').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen()}catch(e){message('Open StackBlitz preview in its own tab before requesting fullscreen.');showMenu(true)}};
+document.addEventListener('fullscreenchange',()=>$('full').textContent=document.fullscreenElement?'⤢':'⛶');
+document.addEventListener('pointerdown',e=>{if(!$('overlay').hidden&&!$('overlay').contains(e.target)&&!$('menu').contains(e.target)&&!$('builder').contains(e.target)&&e.target!==canvas)showMenu(false)});
+for(const el of document.querySelectorAll('.shop-item'))el.onclick=()=>{selectedKind=el.dataset.kind;selected=null;movingId=null;if(!isBuild)toggleBuild(true);showMenu(false);refreshShop()};
+for(const el of document.querySelectorAll('.mode'))el.onclick=()=>chooseMode(el.dataset.mode);
+for(const side of ['left','right'])$('rail-'+side).onclick=()=>{if(rails[side]){selected='rail-'+side;message('Rail '+side+' is installed. Rails are permanent upgrades in this version.');refreshShop();return}if(wallet-900<MIN_CASH){message('Not enough cash to install a rail.');return}cashChange(-900);rails[side]=true;message('Installed the '+side+' rail!');sound(1020,.13);save();refreshShop()};
+$('upgrade').onclick=()=>{const b=selectedPart();if(!b||b.level>=3)return;const cost=costUpgrade(b);if(wallet-cost<MIN_CASH)return;cashChange(-cost);b.level++;sound(870,.07);save();refreshShop();message('Upgraded to level '+b.level+'. More points and money per hit.')};
+$('sell').onclick=()=>{const b=selectedPart();if(!b)return;const refund=Math.round(types[b.kind].cost*.65+(b.level-1)*types[b.kind].cost*.35);cashChange(refund);parts=parts.filter(p=>p.id!==b.id);selected=null;movingId=null;save();refreshShop();message('Sold bumper for $'+refund+'.')};
+$('move').onclick=()=>{const b=selectedPart();if(!b)return;movingId=b.id;message('Now tap an empty peg to move the selected bumper.');showMenu(false);refreshShop()};
+$('buy-ball').onclick=()=>dropBall(true);$('spam').onclick=()=>dropBall(true);
+$('mobile-launch').onclick=()=>dropBall(false);
+$('reset-round').onclick=()=>{balls=[];income=0;ensureBall();message('New round started. Your table and cash remain.');refreshShop()};
+$('sound').onclick=()=>{soundOn=!soundOn;$('sound').textContent=soundOn?'♫ SOUND ON':'♫ SOUND OFF'};
+$('clear-layout').onclick=()=>{if(!confirm('Sell ALL owned bumpers for partial refunds and remove both rails?'))return;for(const b of parts)cashChange(Math.round(types[b.kind].cost*.65));parts=[];for(const side of ['left','right'])if(rails[side]){cashChange(450);rails[side]=false}selected=null;movingId=null;save();refreshShop();message('Layout cleared and partial refunds issued.')};
+for(const [id,f] of [['left',left],['right',right]]){const el=$(id);el.onpointerdown=e=>{e.preventDefault();el.setPointerCapture(e.pointerId);f.hold=true};for(const evt of ['pointerup','pointercancel','lostpointercapture'])el.addEventListener(evt,()=>f.hold=false)}
+canvas.onpointerdown=e=>{e.preventDefault();canvas.setPointerCapture(e.pointerId);const bounds=canvas.getBoundingClientRect(),x=(e.clientX-bounds.left)*W/bounds.width,y=(e.clientY-bounds.top)*H/bounds.height;
+ if(isBuild){const index=nearestPeg(x,y);if(index>=0)selectPeg(index);else message('Tap one of the evenly spaced peg sockets.');return}
+ const side=x<W/2?'left':'right';pointerMap.set(e.pointerId,side);(side==='left'?left:right).hold=true};
+for(const evt of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(evt,e=>{const side=pointerMap.get(e.pointerId);pointerMap.delete(e.pointerId);if(side)(side==='left'?left:right).hold=[...pointerMap.values()].includes(side)});
+window.addEventListener('keydown',e=>{if(['Space','ArrowLeft','ArrowRight','KeyA','KeyD','KeyM','KeyB','KeyF'].includes(e.code))e.preventDefault();if(e.code==='Space'&&!e.repeat)dropBall(true);
+ if(e.code==='KeyA'||e.code==='ArrowLeft')left.hold=true;if(e.code==='KeyD'||e.code==='ArrowRight')right.hold=true;
+ if(e.repeat)return;
+ if(e.code==='KeyB')toggleBuild(!isBuild);if(e.code==='KeyM')showMenu($('overlay').hidden);if(e.code==='KeyF')$('full').click();if(e.code==='Escape')showMenu(false)});
+window.addEventListener('keyup',e=>{if(e.code==='KeyA'||e.code==='ArrowLeft')left.hold=false;if(e.code==='KeyD'||e.code==='ArrowRight')right.hold=false});
+window.addEventListener('blur',()=>{left.hold=false;right.hold=false});
+function neonLine(x,y,xx,yy,c,w=3){g.save();g.strokeStyle=c;g.lineWidth=w;g.shadowColor=c;g.shadowBlur=11;g.lineCap='round';g.beginPath();g.moveTo(x,y);g.lineTo(xx,yy);g.stroke();g.restore()}
+function circle(x,y,r,c,bright=true){g.save();g.shadowColor=c;g.shadowBlur=bright?17:0;g.strokeStyle=c;g.lineWidth=3;g.beginPath();g.arc(x,y,r,0,TAU);g.stroke();g.restore()}
+function polyline(points,c,w=3){for(let i=1;i<points.length;i++)neonLine(points[i-1][0],points[i-1][1],points[i][0],points[i][1],c,w)}
+function drawBumper(x,y,kind,level,ghost=false){const t=types[kind],r=t.r;g.save();g.globalAlpha=ghost?.45:1;g.shadowColor=t.color;g.shadowBlur=ghost?5:17;g.fillStyle='#102743';g.strokeStyle=t.color;g.lineWidth=4;g.beginPath();g.arc(x,y,r,0,TAU);g.fill();g.stroke();g.shadowBlur=0;g.fillStyle=t.color;g.textAlign='center';g.font='bold '+(r<15?13:18)+'px system-ui';g.fillText(kind==='basic'?'●':kind==='power'?'⚡':kind==='grab'?'↪':kind==='phase'?'✧':'✳',x,y+5);if(level>1){g.font='bold 10px monospace';g.fillText('L'+level,x,y-r-7)}g.restore()}
 function render(){
- const g=ctx;
  g.setTransform(1.2,0,0,1.2,0,0);
- const grad=g.createLinearGradient(0,0,0,H);grad.addColorStop(0,'#091d36');grad.addColorStop(.5,'#060f26');grad.addColorStop(1,'#09152e');g.fillStyle=grad;g.fillRect(0,0,W,H);
- g.fillStyle='#07142b';g.fillRect(34,84,550,720);
- g.strokeStyle='#16365c';g.lineWidth=1;for(let y=102;y<815;y+=39){g.beginPath();g.moveTo(51,y);g.lineTo(579,y);g.stroke()};for(let x=65;x<573;x+=39){g.beginPath();g.moveTo(x,103);g.lineTo(x,812);g.stroke()}
- g.fillStyle='#10284b';g.fillRect(0,0,W,84);g.strokeStyle='#3d8cac';g.lineWidth=2;g.beginPath();g.moveTo(0,83);g.lineTo(W,83);g.stroke();g.textAlign='left';g.font='900 30px system-ui';g.fillStyle=palette.cyan;g.fillText('NEON',20,38);g.fillStyle=palette.pink;g.fillText('PINBALL',117,38);g.font='bold 14px monospace';g.fillStyle='#a8d5f9';g.fillText('SCORE  '+score.toLocaleString(),21,65);g.textAlign='right';g.fillText('BALL '+balls+'   ×'+level,579,65);
- g.fillStyle='#102f51';g.fillRect(522,176,49,620);line(522,176,522,795,palette.cyan,4,8);line(574,113,574,797,'#47759e',5,3);line(522,795,574,795,'#47759e',5,3);g.font='12px monospace';g.textAlign='center';g.save();g.translate(551,486);g.rotate(-Math.PI/2);g.fillStyle='#77aed9';g.fillText('LAUNCH LANE',0,0);g.restore();
- for(const w of walls)line(...w,(w===walls[7]||w===walls[8])?palette.pink:palette.cyan,4,9);
- for(const t of targets){g.fillStyle=t.lit?'#9fffe4':'#8557bf';g.shadowColor=t.lit?palette.green:palette.purple;g.shadowBlur=16;g.fillRect(t.x-18,t.y-10,36,20);g.shadowBlur=0;g.strokeStyle='#c3a8ff';g.lineWidth=2;g.strokeRect(t.x-18,t.y-10,36,20)}
- for(const b of bumpers){glimmerCircle(b.x,b.y,b.r,b.color);g.save();g.fillStyle='#0c1a36';g.beginPath();g.arc(b.x,b.y,Math.max(4,b.r-9),0,TAU);g.fill();g.shadowColor=b.color;g.shadowBlur=15;g.fillStyle=b.color;g.beginPath();g.arc(b.x,b.y,6,0,TAU);g.fill();g.restore()}
- for(const b of playerBumpers){
- const cfg=bumperTypes[b.kind];
- glimmerCircle(b.x,b.y,cfg.r,cfg.color);
- g.save();
- g.fillStyle='#0c1830';g.beginPath();g.arc(b.x,b.y,Math.max(4,cfg.r-7),0,TAU);g.fill();
- g.font='bold 15px system-ui';g.fillStyle=cfg.color;g.textAlign='center';
- g.fillText(b.kind==='gold'?'★':b.kind==='power'?'⚡':'●',b.x,b.y+5);
- g.fillStyle='#fff';g.font='bold 10px monospace';g.fillText('L'+b.level,b.x,b.y-cfg.r-6);
- if(buildMode&&b.id===selectedPlacedId){
-  g.strokeStyle='#fff';g.lineWidth=3;g.setLineDash([6,4]);
-  g.beginPath();g.arc(b.x,b.y,cfg.r+11,0,TAU);g.stroke();g.setLineDash([])
- }
- g.restore();
+ const bg=g.createLinearGradient(0,0,0,H);bg.addColorStop(0,'#0b2440');bg.addColorStop(.6,'#08132d');bg.addColorStop(1,'#080e20');g.fillStyle=bg;g.fillRect(0,0,W,H);
+ g.strokeStyle='#163451';g.lineWidth=.7;for(let x=46;x<555;x+=41){g.beginPath();g.moveTo(x,66);g.lineTo(x,830);g.stroke()}for(let y=70;y<837;y+=41){g.beginPath();g.moveTo(34,y);g.lineTo(575,y);g.stroke()}
+ g.fillStyle='#0a2b4b';g.fillRect(0,0,W,68);g.textAlign='left';g.fillStyle=COLORS.blue;g.font='900 27px system-ui';g.fillText('PINBALL',16,30);g.fillStyle=COLORS.pink;g.fillText('TYCOON',161,30);
+ g.fillStyle='#b8def7';g.font='bold 12px monospace';g.fillText('SCORE '+score.toLocaleString(),16,53);
+ g.textAlign='right';g.fillStyle=COLORS.green;g.fillText(mode==='uloop'?'GRAVITY ↑ → ↓':mode==='flip'?'FLIP FIELD':'CLASSIC ↓',584,53);
+ const border=[[60,112],[60,656],[133,714]];polyline(border,COLORS.blue,3);polyline([[508,112],[508,655],[432,713]],COLORS.blue,3);neonLine(60,112,95,85,COLORS.blue);neonLine(95,85,470,85,COLORS.blue);neonLine(470,85,508,112,COLORS.blue);
+ if(mode==='uloop'){polyline(uPath,COLORS.purple,5);g.textAlign='center';g.fillStyle=COLORS.purple;g.font='bold 13px system-ui';g.fillText('UP',108,487);g.fillText('RIGHT',283,104);g.fillText('DOWN',475,470)}
+ if(mode==='flip'){const a=phaseTimer*.24;g.textAlign='center';g.font='bold 20px system-ui';g.fillStyle=COLORS.purple;g.fillText('GRAVITY FIELD',285,117);g.beginPath();g.moveTo(285,157);g.lineTo(285+Math.sin(a)*33,157+Math.cos(a)*33);g.strokeStyle=COLORS.green;g.lineWidth=5;g.stroke()}
+ for(const socket of pegGrid){g.fillStyle='#335876';g.beginPath();g.arc(socket.x,socket.y,5,0,TAU);g.fill();if(isBuild){g.strokeStyle='#4f8dbf';g.lineWidth=1;g.beginPath();g.arc(socket.x,socket.y,10,0,TAU);g.stroke()}}
+ for(const b of starter)drawBumper(b.x,b.y,b.kind,1);
+ for(const part of parts){const p=pegGrid[part.index];drawBumper(p.x,p.y,part.kind,part.level);if(isBuild&&selected===part.id){circle(p.x,p.y,types[part.kind].r+8,'#fff',false)}}
+ for(const side of ['left','right']){const x=side==='left'?75:491,y=497;g.save();g.globalAlpha=rails[side]?1:.35;circle(x,y,15,rails[side]?COLORS.gold:COLORS.blue);g.textAlign='center';g.fillStyle=COLORS.gold;g.font='11px system-ui';g.fillText('RAIL',x,535);if(rails[side]){polyline(railPaths[side],COLORS.gold,3);for(let i=3;i<railPaths[side].length-1;i+=2){const p=railPaths[side][i];circle(p[0],p[1],9,COLORS.purple)}}g.restore()}
+ circle(294,379,16,COLORS.gold);g.fillStyle=COLORS.gold;g.textAlign='center';g.font='bold 10px system-ui';g.fillText('RAIL PRIZE',294,411);
+ polyline([[60,653],[132,707]],COLORS.pink,4);polyline([[508,653],[433,707]],COLORS.blue,4);
+ for(const [f,color] of [[left,COLORS.pink],[right,COLORS.blue]]){const tx=f.x+Math.cos(f.a)*f.len,ty=f.y+Math.sin(f.a)*f.len;neonLine(f.x,f.y,tx,ty,color,17);circle(f.x,f.y,9,color)}
+ for(const ball of balls){g.save();g.shadowColor='#bdfaff';g.shadowBlur=20;g.fillStyle='#f4ffff';g.beginPath();g.arc(ball.x,ball.y,ball.r,0,TAU);g.fill();g.restore()}
+ for(const p of particles){g.save();g.globalAlpha=clamp(p.t*2,0,1);g.fillStyle=p.c;g.fillRect(p.x,p.y,4,4);g.restore()}
+ for(const p of popups){g.save();g.globalAlpha=clamp(p.time*2,0,1);g.textAlign='center';g.fillStyle=p.c;g.font='bold 12px system-ui';g.fillText(p.t,p.x,p.y);g.restore()}
+ g.textAlign='center';g.fillStyle='#84c6e8';g.font='bold 11px system-ui';g.fillText('BALLS '+balls.length+'  ·  CASH $'+wallet,290,818);
+ if(isBuild){g.fillStyle='#08243eb8';g.fillRect(63,140,441,40);g.fillStyle=COLORS.green;g.font='bold 16px system-ui';g.textAlign='center';g.fillText('BUILD: TAP A PEG SOCKET',282,166)}
 }
-for(const p of prizes){
-  g.save();g.globalAlpha=p.lit?.38:1;g.shadowColor=p.color;g.shadowBlur=p.lit?2:15;g.fillStyle=p.lit?'#29405b':p.color;g.beginPath();g.arc(p.x,p.y,p.r,0,TAU);g.fill();g.fillStyle='#08162d';g.beginPath();g.arc(p.x,p.y,p.r-4,0,TAU);g.fill();
-  g.globalAlpha=1;g.font='bold 10px system-ui';g.textAlign='center';g.fillStyle=p.lit?'#58728b':p.color;g.fillText(p.label,p.x,p.y-20);g.restore();
- }
- for(const p of pegs){glimmerCircle(p.x,p.y,p.r, palette.cyan)}
- g.fillStyle='#db2f8a18';g.beginPath();g.moveTo(106,602);g.lineTo(207,668);g.lineTo(108,694);g.closePath();g.fill();
- g.fillStyle='#23c6f618';g.beginPath();g.moveTo(461,602);g.lineTo(359,668);g.lineTo(457,694);g.closePath();g.fill();
- for(const f of [L,RR]){let ex=f.px+Math.cos(f.angle)*f.len,ey=f.py+Math.sin(f.angle)*f.len;line(f.px,f.py,ex,ey,f.color,18,17);glimmerCircle(f.px,f.py,12,f.color)}
- g.fillStyle='#061020';g.fillRect(0,813,W,27);g.textAlign='center';g.fillStyle='#5d9dc8';g.font='bold 12px system-ui';g.fillText('SAVE THE BALL WITH YOUR FLIPPERS',295,829);
- if(ball){if(!ball.inLane){for(let i=0;i<ball.trail.length;i++){let p=ball.trail[i];g.globalAlpha=(i+1)/ball.trail.length*.28;g.fillStyle='#a2f5ff';g.beginPath();g.arc(p.x,p.y,2+i*.4,0,TAU);g.fill()}g.globalAlpha=1}
-  g.save();g.shadowColor='#b6ffff';g.shadowBlur=24;g.fillStyle='#f1ffff';g.beginPath();g.arc(ball.x,ball.y,ball.r,0,TAU);g.fill();g.restore()}
- for(const e of effects){g.globalAlpha=Math.min(1,e.time*2);g.font='bold 18px system-ui';g.fillStyle='#c4ffea';g.textAlign='center';g.fillText(e.text,e.x,e.y)}g.globalAlpha=1;
- for(const p of particles){g.globalAlpha=Math.min(1,p.life*2);g.fillStyle=p.c;g.fillRect(p.x,p.y,4,4)}g.globalAlpha=1;
- if(buildMode){
- g.save();g.fillStyle='#77dfff';g.globalAlpha=.08;g.fillRect(75,221,421,428);g.globalAlpha=1;
- g.strokeStyle='#3daedd88';g.lineWidth=2;g.setLineDash([5,7]);g.strokeRect(75,221,421,428);g.setLineDash([]);
- if(buildHover){
-  const cfg=bumperTypes[chosenKind],valid=canPlace(buildHover.x,buildHover.y,chosenKind);
-  g.fillStyle=valid?cfg.color:'#ff587b';g.globalAlpha=.35;g.beginPath();g.arc(buildHover.x,buildHover.y,cfg.r,0,TAU);g.fill();
-  g.globalAlpha=1;g.strokeStyle=valid?'#b1ffde':'#ff587b';g.lineWidth=3;g.beginPath();g.arc(buildHover.x,buildHover.y,cfg.r+3,0,TAU);g.stroke();
- }
- g.font='bold 17px system-ui';g.fillStyle='#bbf6ff';g.textAlign='center';
- g.fillText('BUILD MODE · TAP TO PLACE',285,125);g.restore();
+function step(dt){
+ clock+=dt;tick++;phaseTimer+=dt;
+ for(const f of [left,right])updateFlippersOne(f,dt);
+ if(!isBuild){for(let i=balls.length-1;i>=0;i--){const b=balls[i];advanceBall(b,dt);if(b.y>866){removeBall(i)}}reduceExtras()}
+ for(const p of popups)p.y-=24*dt;popups=popups.filter(p=>(p.time-=dt)>0);for(const p of particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=240*dt}particles=particles.filter(p=>(p.t-=dt)>0)
 }
-if(phase==='ready'&&!buildMode){g.fillStyle='#071329e7';g.fillRect(110,318,375,128);g.strokeStyle='#59c9ec';g.lineWidth=2;g.strokeRect(110,318,375,128);g.textAlign='center';g.fillStyle='#ecfaff';g.font='900 34px system-ui';g.fillText('READY TO PLAY?',295,360);g.font='bold 17px system-ui';g.fillStyle=palette.cyan;g.fillText('PRESS SPACE OR LAUNCH',295,393);g.font='13px system-ui';g.fillStyle='#aacce3';g.fillText('BALL STARTS IN THE RIGHT LANE',295,422)}
- if(phase==='over'&&!buildMode){g.fillStyle='#061122e9';g.fillRect(0,84,W,756);g.textAlign='center';g.fillStyle=palette.pink;g.font='900 54px system-ui';g.fillText('GAME OVER',300,350);g.fillStyle='#e4ffff';g.font='bold 28px system-ui';g.fillText(score.toLocaleString()+' POINTS',300,400);g.font='17px system-ui';g.fillStyle=palette.cyan;g.fillText('PRESS LAUNCH FOR NEW GAME',300,450)}
- if(paused&&!buildMode){g.fillStyle='#061122d9';g.fillRect(0,85,W,755);g.font='900 54px system-ui';g.fillStyle='#e4ffff';g.textAlign='center';g.fillText('PAUSED',300,414)}
-}
-function loop(time){let dt=Math.min(.04,(time-lastRender)/1000);lastRender=time;if(!paused){acc=Math.min(.1,acc+dt);let loops=0;while(acc>=FIXED&&loops++<12){update(FIXED);acc-=FIXED}}else acc=0;render();requestAnimationFrame(loop)}
-restart();requestAnimationFrame(loop);
-window.__pinballDebug={get:()=>({score,best,balls,phase,paused,cash,buildMode,chosenKind,playerBumpers:playerBumpers.map(b=>({...b})),ball:ball?{x:ball.x,y:ball.y,vx:ball.vx,vy:ball.vy,inLane:ball.inLane,active:ball.active}:null,level,nudges,flippers:{left:{angle:L.angle,held:L.held},right:{angle:RR.angle,held:RR.held}},prizes:prizes.map(p=>({label:p.label,lit:p.lit}))}),launch,restart,setBuildMode,handleBuildTap,canPlace,advance:(seconds)=>{for(let i=0;i<seconds/FIXED;i++)update(FIXED)},setBall:(x,y,vx,vy)=>{ball={x,y,vx,vy,r:R,inLane:false,active:true,trail:[],idle:0};phase='playing'},hold:(side,down)=>flip(side,down)};
+function updateFlippersOne(f,dt){const target=f.hold?f.up:f.rest,delta=clamp(target-f.a,-11.5*dt,11.5*dt);f.a+=delta;f.omega=delta/dt}
+let last=performance.now(),acc=0,frames=0;
+function frame(t){acc+=Math.min(.05,(t-last)/1000);last=t;let steps=0;while(acc>=DT&&steps++<16){step(DT);acc-=DT}if(steps>=16)acc=0;render();if(++frames%20===0){refreshShop();if(savePending){save();savePending=false}}requestAnimationFrame(frame)}
+load();ensureBall();refreshShop();requestAnimationFrame(frame);
+window.__pinballTest={get:()=>({wallet,score,mode,balls:balls.length,parts:parts.map(p=>({...p})),rails:{...rails},selected,isBuild,flippers:{left:left.a,right:right.a}}),step:(n=1)=>{for(let i=0;i<n;i++)step(DT)},canBuild,selectPeg,toggleBuild,chooseMode,spawn,dropBall,setBall:(x,y,vx,vy)=>{const b=balls[0]||spawn();b.modePath=null;b.x=x;b.y=y;b.vx=vx;b.vy=vy},walletSet:v=>wallet=v,partSet:(index,kind)=>{parts.push({id:idCounter++,kind,index,level:1,cooldown:0})}};
 })();
 </script>
-</body>
-</html>
+</body></html>
