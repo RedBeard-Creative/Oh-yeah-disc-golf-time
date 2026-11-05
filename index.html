@@ -1,58 +1,56 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0b1126">
-  <title>Oh Yeah Disc Golf Time! — Wheel of Doom</title>
-  <link rel="stylesheet" href="./style.css">
-</head>
-<body>
-  <header class="hero">
-    <p class="eyebrow">🥏 THE ULTIMATE DISC GOLF GAME</p>
-    <h1>OH YEAH! <span>DISC GOLF TIME</span></h1>
-    <p>THE WHEEL OF DOOM — FIVE WHEELS • SIXTY-ONE CHALLENGES</p>
-  </header>
-  <main class="layout">
-    <section class="topbar">
-      <div class="hole"><small>NOW PLAYING</small><strong id="holeNumber">HOLE 1</strong></div>
-      <div class="mini-stat"><b>5</b><small>WHEELS</small></div>
-      <div class="mini-stat"><b>61</b><small>CHALLENGES</small></div>
-      <button id="showRules" class="quiet">ALL CHALLENGES</button>
-    </section>
-
-    <section id="catalogue" class="panel" hidden></section>
-
-    <section class="panel">
-      <div class="panel-heading"><h2>PLAYERS</h2><span>Everyone spins before each hole</span></div>
-      <div id="players" class="players"></div>
-      <form id="addPlayer" class="add-player">
-        <input id="playerName" maxlength="24" placeholder="New player name" aria-label="New player name" required>
-        <button type="submit">+ ADD PLAYER</button>
-      </form>
-    </section>
-
-    <section class="panel game">
-      <div class="panel-heading"><h2 id="currentPlayer">PLAYER 1</h2><span id="spinCount">1 spin remaining</span></div>
-      <div id="steps" class="steps">① WHEEL OF FATE → ② CHALLENGE → ③ DOOM</div>
-      <div class="game-grid">
-        <div class="wheel-area">
-          <div id="wheel" class="wheel"></div>
-          <div id="landing" class="landing" aria-live="polite">SPIN TO BEGIN</div>
-        </div>
-        <div id="controls" class="controls" aria-live="polite"></div>
-      </div>
-      <div id="pending" class="pending"></div>
-      <p class="rule-note">Failed risk challenges add TWO spins to the <b>NEXT hole only</b>. They never add a spin to this hole.</p>
-    </section>
-
-    <section class="panel">
-      <div class="panel-heading"><h2>HOLE TRACKER</h2><button id="nextHole" class="primary">NEXT HOLE →</button></div>
-      <p class="subtle">Any unanswered risk challenge counts as failed when you advance.</p>
-      <div id="tracker" class="tracker"></div>
-    </section>
-    <footer><button id="reset" class="quiet">RESET GAME</button><p>Saved automatically on this device. Make sure the throwing area is clear before trying a challenge.</p></footer>
-  </main>
-  <script type="module" src="./app.js"></script>
-</body>
-</html>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"><title>Nexus Watch — Neon Pinball</title><style>
+*{box-sizing:border-box}body{margin:0;min-height:100dvh;display:flex;align-items:center;flex-direction:column;background:radial-gradient(ellipse at top,#17315a,#070b16 70%);font:14px system-ui;color:#eefaff;padding:12px;touch-action:manipulation}h1{font-size:20px;letter-spacing:.16em;color:#b5eeff;margin:2px 0 4px}.sub{font-size:10px;letter-spacing:.15em;color:#91acc9;margin-bottom:12px}.shell{width:min(320px,94vw);border:7px solid #38485e;border-radius:37px;padding:6px;background:#101927;box-shadow:0 15px 40px #000a,0 0 28px #168cce44}canvas{display:block;width:100%;aspect-ratio:280/456;background:#061020;border-radius:23px;touch-action:none}.controls{width:min(320px,94vw);display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}button{cursor:pointer;color:#d8f9ff;border:1px solid #3884ae;background:#142a4c;border-radius:13px;padding:11px;font-weight:700;touch-action:none}.flipper{font-size:16px;padding:18px 8px;background:#174066}.flipper.on{background:#2a7fb0}.tools{display:flex;gap:8px;margin:10px 0}.help{max-width:335px;font-size:12px;color:#a3bdd9;line-height:1.5;text-align:center}#status{font-size:11px;color:#9affdb;margin:4px}
+</style></head><body><h1>NEON PINBALL</h1><div class="sub">NEXUS WATCH 01 · GAME G32</div><div class="shell"><canvas id="c" width="280" height="456"></canvas></div><div class="controls"><button id="l" class="flipper">◀ LEFT</button><button id="r" class="flipper">RIGHT ▶</button></div><div class="tools"><button id="launch">● LAUNCH</button><button id="restart">↻ NEW GAME</button><button id="sound">♫ ON</button></div><div id="status">3 BALLS · HIGH SCORES · MULTIPLIERS</div><div class="help">Launch with the button or Space. Hold left/right flippers or press A/D or ←/→. On phones, touch the bottom-left or bottom-right of the watch screen.</div>
+<script>
+(()=>{
+const cv=document.querySelector('#c'),g=cv.getContext('2d'),W=280,H=456,P=Math.PI*2,$=id=>document.getElementById(id);
+let points=0,high=0,remaining=3,ball=null,over=false,left=false,right=false,multi=1,hits=0,hitClock=0,muted=false;
+try{high=+(localStorage.getItem('nexus-g32-hi')||0)}catch(e){}
+const bump=[{x:91,y:142,r:18,c:'#fa65c5'},{x:184,y:145,r:18,c:'#5addff'},{x:139,y:213,r:19,c:'#ffe177'}];
+const peg=[{x:50,y:239},{x:230,y:239},{x:74,y:282},{x:202,y:281},{x:139,y:300}];
+const walls=[[[18,64],[18,352]],[[18,352],[61,389]],[[262,64],[262,352]],[[262,352],[219,389]],[[48,51],[232,51]],[[48,51],[18,64]],[[232,51],[262,64]],[[51,337],[94,369]],[[229,337],[186,369]]];
+const tabs=[{x:54,y:85,lit:false},{x:99,y:77,lit:false},{x:145,y:77,lit:false},{x:190,y:85,lit:false}];
+const L={x:94,y:394,a:.4,rest:.4,on:-.55},R={x:186,y:394,a:Math.PI-.4,rest:Math.PI-.4,on:Math.PI+.55};
+let sparks=[],popups=[],audio,last=performance.now(),lag=0;
+function ping(f=450,d=.06){if(muted)return;try{audio=audio||new(window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();let o=audio.createOscillator(),v=audio.createGain();o.type='triangle';o.frequency.value=f;v.gain.setValueAtTime(.04,audio.currentTime);v.gain.exponentialRampToValueAtTime(.0001,audio.currentTime+d);o.connect(v);v.connect(audio.destination);o.start();o.stop(audio.currentTime+d)}catch(e){}}
+function score(n,x,y){points+=n*multi;popups.push({x,y,t:'+'+n*multi,time:48});hits++;hitClock=170;if(hits%8===0){multi=Math.min(5,multi+1);popups.push({x:136,y:260,t:'x'+multi+' BONUS',time:65})}if(points>high){high=points;try{localStorage.setItem('nexus-g32-hi',high)}catch(e){}}}
+function sparkle(x,y,c){for(let i=0;i<11;i++){let a=Math.random()*P,v=1+Math.random()*2;sparks.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,c,t:25})}}
+function ready(){ball={x:248,y:412,vx:0,vy:0,r:6,live:false,trail:[]}}
+function start(){points=0;remaining=3;multi=1;hits=0;hitClock=0;over=false;popups=[];sparks=[];tabs.forEach(t=>t.lit=false);ready()}
+function launch(){if(over){start();return}if(!ball)ready();if(!ball.live){ball.live=true;ball.vx=-2.2;ball.vy=-11.5;ping(660,.15)}}
+function flip(side,on){if(side==='l'){left=on;$('l').classList.toggle('on',on)}else{right=on;$('r').classList.toggle('on',on)}}
+for(const side of ['l','r']){let el=$(side);el.onpointerdown=e=>{e.preventDefault();el.setPointerCapture(e.pointerId);flip(side,true)};for(const type of ['pointerup','pointercancel','lostpointercapture'])el.addEventListener(type,()=>flip(side,false))}
+$('launch').onclick=launch;$('restart').onclick=start;$('sound').onclick=()=>{muted=!muted;$('sound').textContent=muted?'♫ OFF':'♫ ON'};
+window.onkeydown=e=>{if(['ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();if(e.code==='Space'&&!e.repeat)launch();if(['ArrowLeft','KeyA'].includes(e.code))flip('l',true);if(['ArrowRight','KeyD'].includes(e.code))flip('r',true)};
+window.onkeyup=e=>{if(['ArrowLeft','KeyA'].includes(e.code))flip('l',false);if(['ArrowRight','KeyD'].includes(e.code))flip('r',false)};
+window.onblur=()=>{flip('l',false);flip('r',false)};
+const activeTouches=new Map();cv.onpointerdown=e=>{e.preventDefault();cv.setPointerCapture(e.pointerId);if(over||!ball?.live){launch();return}const rect=cv.getBoundingClientRect(),x=(e.clientX-rect.left)*W/rect.width,y=(e.clientY-rect.top)*H/rect.height;if(y>220){let side=x<140?'l':'r';activeTouches.set(e.pointerId,side);flip(side,true)}};for(const t of ['pointerup','pointercancel','lostpointercapture'])cv.addEventListener(t,e=>{let side=activeTouches.get(e.pointerId);activeTouches.delete(e.pointerId);if(side)flip(side,[...activeTouches.values()].includes(side))});
+function wall(a,b,c,d,boost=0){let dx=c-a,dy=d-b,t=Math.max(0,Math.min(1,((ball.x-a)*dx+(ball.y-b)*dy)/(dx*dx+dy*dy))),px=a+t*dx,py=b+t*dy,ox=ball.x-px,oy=ball.y-py,dist=Math.hypot(ox,oy);if(dist>ball.r+1)return false;let nx=ox/(dist||1),ny=oy/(dist||1);ball.x+=nx*(ball.r+1-dist);ball.y+=ny*(ball.r+1-dist);let dot=ball.vx*nx+ball.vy*ny;if(dot<0){ball.vx-=1.75*dot*nx;ball.vy-=1.75*dot*ny}if(boost){ball.vy=Math.min(-5.5,ball.vy-boost);ball.vx+=nx*.9;ping(270,.04)}return true}
+function physics(){if(hitClock>0&&--hitClock===0){multi=1;hits=0}L.a+=( (left?L.on:L.rest)-L.a)*.38;R.a+=((right?R.on:R.rest)-R.a)*.38;sparks=sparks.filter(p=>--p.t>0);for(const p of sparks){p.x+=p.vx;p.y+=p.vy;p.vy+=.04}popups=popups.filter(p=>--p.time>0);for(const p of popups)p.y-=.35;
+if(!ball?.live)return;ball.vy+=.12;ball.x+=ball.vx;ball.y+=ball.vy;let speed=Math.hypot(ball.vx,ball.vy);if(speed>11){ball.vx*=11/speed;ball.vy*=11/speed}
+if(ball.y<57){ball.y=57;ball.vy=Math.abs(ball.vy)*.8}if(ball.x<24){ball.x=24;ball.vx=Math.abs(ball.vx)*.8}if(ball.x>256){ball.x=256;ball.vx=-Math.abs(ball.vx)*.8}
+for(const w of walls)wall(w[0][0],w[0][1],w[1][0],w[1][1]);
+for(const b of bump){let d=Math.hypot(ball.x-b.x,ball.y-b.y);if(d<b.r+ball.r){let nx=(ball.x-b.x)/(d||1),ny=(ball.y-b.y)/(d||1),v=Math.max(6.5,Math.hypot(ball.vx,ball.vy)*1.08);ball.x=b.x+nx*(b.r+ball.r+1);ball.y=b.y+ny*(b.r+ball.r+1);ball.vx=nx*v;ball.vy=ny*v;score(100,b.x,b.y);sparkle(b.x,b.y,b.c);ping(480+Math.random()*200)}}
+for(const p of peg){let d=Math.hypot(ball.x-p.x,ball.y-p.y),r=12;if(d<r){let nx=(ball.x-p.x)/(d||1),ny=(ball.y-p.y)/(d||1),v=ball.vx*nx+ball.vy*ny;ball.x=p.x+nx*r;ball.y=p.y+ny*r;if(v<0){ball.vx-=1.8*v*nx;ball.vy-=1.8*v*ny}}}
+for(const t of tabs){if(ball.x>t.x-6&&ball.x<t.x+31&&ball.y>t.y-6&&ball.y<t.y+13){if(!t.lit){t.lit=true;score(250,t.x,t.y);ping(850)}ball.vy=Math.abs(ball.vy)*.7;ball.y=t.y+13}}
+for(const [f,on] of [[L,left],[R,right]]){let ex=f.x+Math.cos(f.a)*49,ey=f.y+Math.sin(f.a)*49;if(wall(f.x,f.y,ex,ey,on?4.5:0)&&on){ball.vx+=(f===L?1:-1)*1.5}}
+if(tabs.every(t=>t.lit)){tabs.forEach(t=>t.lit=false);score(1000,140,101);sparkle(140,112,'#ffe277')}
+ball.trail.push([ball.x,ball.y]);if(ball.trail.length>9)ball.trail.shift();
+if(ball.y>465){remaining--;ping(125,.26);if(remaining>0)ready();else{ball=null;over=true}}}
+function draw(){g.fillStyle='#071026';g.fillRect(0,0,W,H);g.fillStyle='#0e203b';g.fillRect(0,0,W,46);g.fillStyle='#ecfcff';g.font='bold 14px system-ui';g.textAlign='left';g.fillText('G32 / NEON',12,18);g.font='11px monospace';g.fillStyle='#86dfff';g.fillText('SCORE '+points.toLocaleString(),12,35);g.textAlign='right';g.fillText('HI '+high.toLocaleString(),268,18);g.fillText('BALL '+remaining+'/3',268,35);
+g.strokeStyle='#15395c';g.lineWidth=.7;for(let y=60;y<423;y+=37){g.beginPath();g.moveTo(18,y);g.lineTo(263,y);g.stroke()}
+for(const w of walls){g.shadowColor='#42c3ff';g.shadowBlur=8;g.strokeStyle='#358fca';g.lineWidth=3;g.beginPath();g.moveTo(...w[0]);g.lineTo(...w[1]);g.stroke()}g.shadowBlur=0;
+for(const t of tabs){g.fillStyle=t.lit?'#78ffc2':'#815ad1';g.shadowColor=g.fillStyle;g.shadowBlur=10;g.fillRect(t.x,t.y,25,8)}g.shadowBlur=0;
+for(const b of bump){g.shadowColor=b.c;g.shadowBlur=20;g.fillStyle=b.c;g.beginPath();g.arc(b.x,b.y,b.r,0,P);g.fill();g.fillStyle='#142344';g.beginPath();g.arc(b.x,b.y,b.r-5,0,P);g.fill()}g.shadowBlur=0;
+for(const p of peg){g.fillStyle='#6bd8ff';g.beginPath();g.arc(p.x,p.y,5,0,P);g.fill()}
+for(const [f,col] of [[L,'#ff64be'],[R,'#54dfff']]){g.strokeStyle=col;g.shadowColor=col;g.shadowBlur=12;g.lineWidth=13;g.lineCap='round';g.beginPath();g.moveTo(f.x,f.y);g.lineTo(f.x+Math.cos(f.a)*49,f.y+Math.sin(f.a)*49);g.stroke()}g.shadowBlur=0;
+g.fillStyle='#92d8fe';g.font='11px system-ui';g.textAlign='center';g.fillText('×'+multi+' MULTIPLIER',140,326);
+if(ball){for(let i=0;i<ball.trail.length;i++){g.fillStyle='rgba(105,217,255,'+(i/ball.trail.length*.38)+')';let p=ball.trail[i];g.beginPath();g.arc(p[0],p[1],2+i/ball.trail.length*2.3,0,P);g.fill()}g.shadowColor='#aff3ff';g.shadowBlur=16;g.fillStyle='#f0ffff';g.beginPath();g.arc(ball.x,ball.y,ball.r,0,P);g.fill();g.shadowBlur=0}
+for(const p of sparks){g.globalAlpha=p.t/25;g.fillStyle=p.c;g.fillRect(p.x,p.y,3,3)}g.globalAlpha=1;for(const p of popups){g.globalAlpha=Math.min(1,p.time/20);g.fillStyle='#d5fbff';g.font='bold 12px system-ui';g.fillText(p.t,p.x,p.y)}g.globalAlpha=1;
+g.fillStyle='#112848';g.fillRect(0,429,W,27);g.fillStyle='#8adcf5';g.fillText('◀ FLIP                      FLIP ▶',140,446);
+if(ball&&!ball.live){g.fillStyle='#061126e5';g.fillRect(29,175,222,88);g.strokeStyle='#50b5dc';g.strokeRect(29,175,222,88);g.fillStyle='#e5fbff';g.font='bold 23px system-ui';g.fillText('READY?',140,207);g.fillStyle='#84dffa';g.font='12px system-ui';g.fillText('TAP LAUNCH TO PLAY',140,234)}
+if(over){g.fillStyle='#071021e8';g.fillRect(0,49,280,377);g.fillStyle='#ff7dc3';g.font='bold 27px system-ui';g.fillText('GAME OVER',140,185);g.fillStyle='#ecfdff';g.font='16px system-ui';g.fillText(points+' POINTS',140,218);g.fillStyle='#8be4f8';g.font='12px system-ui';g.fillText('LAUNCH TO RESTART',140,250)}}
+function frame(now){lag+=Math.min(.05,(now-last)/1000);last=now;let loops=0;while(lag>=1/60&&loops++<4){physics();lag-=1/60}draw();requestAnimationFrame(frame)}
+start();requestAnimationFrame(frame);
+})();
+</script></body></html>
