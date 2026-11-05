@@ -217,6 +217,7 @@ function initCatalog(){
  '<button class="btn machine-buy" data-machine="'+id+'"><b>'+m.key+' · '+m.name+'</b><br><small>$'+m.price+' · '+m.desc+'</small></button>').join('');
 }
 
+initCatalog();
 function colorFor(k){return types[k].color}
 function sound(hz=420,length=.045){if(!soundOn)return;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return;ctxAudio??=new A();if(ctxAudio.state==='suspended')ctxAudio.resume();const o=ctxAudio.createOscillator(),a=ctxAudio.createGain();o.type='triangle';o.frequency.value=hz;a.gain.setValueAtTime(.045,ctxAudio.currentTime);a.gain.exponentialRampToValueAtTime(.0001,ctxAudio.currentTime+length);o.connect(a);a.connect(ctxAudio.destination);o.start();o.stop(ctxAudio.currentTime+length)}catch(e){}}
 function message(s){$('message').textContent=s}
@@ -586,7 +587,7 @@ function step(dt){
 function updateFlippersOne(f,dt){const target=f.hold?f.up:f.rest,delta=clamp(target-f.a,-11.5*dt,11.5*dt);f.a+=delta;f.omega=delta/dt}
 let last=performance.now(),acc=0,frames=0;
 function frame(t){acc+=Math.min(.05,(t-last)/1000);last=t;let steps=0;while(acc>=DT&&steps++<16){step(DT);acc-=DT}if(steps>=16)acc=0;render();if(++frames%20===0){refreshShop();if(savePending){save();savePending=false}}requestAnimationFrame(frame)}
-initCatalog();load();ensureBall();refreshShop();requestAnimationFrame(frame);
+load();ensureBall();refreshShop();requestAnimationFrame(frame);
 window.__pinballTest={get:()=>({wallet,score,mode,balls:balls.length,ballStates:balls.map(b=>({x:b.x,y:b.y,vx:b.vx,vy:b.vy,path:b.modePath?.kind||null})),income,parts:parts.map(p=>({...p})),rails:{...rails},selected,isBuild,flippers:{left:left.a,right:right.a,leftHeld:left.hold,rightHeld:right.hold}}),step:(n=1)=>{for(let i=0;i<n;i++)step(DT)},canBuild,selectPeg,toggleBuild,chooseMode,spawn,dropBall,setBall:(x,y,vx,vy)=>{const b=balls[0]||spawn();b.modePath=null;b.x=x;b.y=y;b.vx=vx;b.vy=vy},walletSet:v=>{wallet=v;refreshShop()},hold:(side,on)=>{(side==='left'?left:right).hold=on},cashChange,setback,partSet:(index,kind)=>{parts.push({id:idCounter++,kind,index,level:1,cooldown:0})}};
 })();
 </script>
