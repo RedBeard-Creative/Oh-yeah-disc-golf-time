@@ -1,76 +1,114 @@
-# G32 — Pinball Tycoon V2
+# G32 — Pinball Tycoon MEGA
 
-A custom-built neon pinball tycoon game. **Build, play, upgrade, earn money and explore unusual gravity.**
+**Build your own pinball machines, experiment with gravity, buy weird bumpers and ball abilities, and gradually earn money.** This version combines the earlier Neon Pinball / Pinball Tycoon iterations into one fullscreen browser game.
 
-[**Launch in StackBlitz**](https://stackblitz.com/github/RedBeard-Creative/Oh-yeah-disc-golf-time)
+## Play
 
-The game runs from the repository's self-contained `index.html`. Open the StackBlitz preview in a separate browser tab to use the full window, then click ⛶ for browser fullscreen.
+**[Launch the game in StackBlitz](https://stackblitz.com/github/RedBeard-Creative/Oh-yeah-disc-golf-time)**
 
-## Three table modes
+Click the preview's **open in new tab** icon to remove StackBlitz's editor/sidebar. In the game click **⛶** to ask the browser for fullscreen. The floating **☰** menu contains maps, parts, powers, progress and tools.
 
-- **Classic** — traditional downward gravity.
-- **Gravity U** — a continuously animated, guided upside-down-U start: the ball travels up the left edge, curves across the top, and comes down the right before entering the customizable playfield. The gravity-direction labels follow this path. This part is a guided route, not fully simulated rotating gravitational physics.
-- **Flip Field** — a free-moving pinball table with a gravity vector that smoothly rotates over time.
+The game's complete code is in `index.html`; no server calls are needed to play. It keeps progress in the browser's local storage. The updated game **continues to use the V2 save key** (`nexus-pinball-tycoon-v2`) to load earlier V2 money and parts when compatible.
 
-You may switch modes from the floating ☰ menu. Your owned bumper placements and rails are shared across modes.
+## Seven maps — MAP01 through MAP07
 
-## Build mode — snap bumpers onto pegs
+- **MAP01 Gravity U Deluxe:** continuous guided U-shaped launch (up / over / down), then free pinball play.
+- **MAP02 Spiral Madness:** guided spiral launch path.
+- **MAP03 Infinity Eight:** guided figure-eight launch path.
+- **MAP04 Hourglass:** physical converging barriers and a narrowed passage.
+- **MAP05 Orbital Station:** physically calculated inward gravity-well field.
+- **MAP06 Twin Tables:** divided field with central opening and two additional flippers.
+- **MAP07 Gravity Tower:** two upper barriers and extra upper flippers.
 
-1. Click **🛠 BUILD** (or **B**) to pause the game.
-2. Open the floating menu and select a bumper.
-3. Click an available peg in the **7 × 7 regular socket grid** on the playfield.
-4. Click an owned bumper to select it, then **Upgrade**, **Sell** or **Move** it.
-5. Click **✓ PLAY** to continue.
+These are all visual/gameplay variations inside the shared table canvas. The U, spiral and figure-eight are deliberately **guided pathways**, not free-body rotating-gravity simulations. Balls on those paths are on a separate upper track layer and do not collide with lower-layer bumpers until they exit the guide. No maps above MAP07 are included.
 
-Placement refuses overlapping bumpers, built-in starter bumpers, and rail mounting lanes. Upgrades have three levels. The table allows up to 26 purchased bumpers.
+## Bumper types (17)
 
-### Five bumper types
+| Type | Shop cost | Behavior |
+| --- | ---: | --- |
+| Basic | $120 | Large ordinary bumper; +$1 per hit |
+| Power | $280 | Strong bounce |
+| Grab & Roll | $650 | Captures briefly then ejects sideways |
+| Ultra Phase | $1,050 | Tiny pass-through scoring target |
+| Ball Spawner | $1,600 | Spawns extra balls (six-ball max and cooldown) |
+| Magnet | $450 | Attracts nearby balls |
+| Teleport | $1,800 | Paired teleport bumpers transfer balls |
+| Splitter | $2,500 | Occasionally duplicates a ball |
+| Rotator | $550 | Moves in a circular orbit around its mounted socket |
+| Freeze | $700 | Slows a ball |
+| Multiplier | $1,200 | 2× income for six seconds |
+| Shockwave | $900 | Pushes nearby balls outward |
+| Chain Lightning | $2,000 | Triggers scoring at nearby bumpers |
+| Conveyor | $650 | Briefly captures, shifts then ejects sideways |
+| Growing | $900 | Increases its physical collision radius after hits, then resets |
+| Combo | $1,500 | Awards a bonus for quick repeated hits |
+| Gravity Well | $2,200 | Local attraction field |
 
-| Bumper | Shop cost | Size | Money per hit | What it does |
-| --- | ---: | --- | ---: | --- |
-| Basic | $120 | Large | +$1 | Easy to hit, ordinary bounce |
-| Power | $280 | Medium | +$2 | Stronger bounce |
-| Grab & Roll | $650 | Small | +$3 | Briefly captures then releases a ball horizontally toward the opposite side |
-| Ultra Phase | $1,050 | Tiny | +$5 | Pass-through bumper, deliberately does not bounce the ball |
-| Ball Spawner | $1,600 | Small | +$2 | Spawns another ball when struck (cooldown and six-ball cap apply) |
+All kinds support three upgrade levels (increase their point and/or money rewards). Placement uses evenly spaced sockets, with overlap checks including the rotating bumper's sweep area.
 
-Money income increases with bumper upgrade level.
+## Ball types (8)
 
-## Two rail slots
+**Steel**, **Fire** (quick-hit combo earnings), **Ice** (slower), **Heavy** (larger and faster gravity), **Plasma** (nearby special activation bonus), **Superball** (higher restitution), **Ghost** (wraps past the left/right boundary and skips triangular guides), and **Golden** (bonus income on hits).
 
-Buy the **left** and/or **right** rail for $900 each in the floating menu. A ball entering the corresponding capture gate is guided through the rail, triggers four visible pass-through markers (small score/$ rewards), then reaches the rail prize button (+$15 plus bonus points) and exits smoothly.
+Select a ball in the Ball Lab. Paid balls use that selection. The always-available free replacement ball is Steel.
 
-Rail mounting lanes are protected so newly purchased rails cannot overlap occupied edge sockets.
+## Rail types (9)
 
-## Tycoon economy
+Left, Right, Top Loop, Bottom Rescue, Spiral, Cross-Map, Underground, Split, and **Custom Rail**. Every purchased rail has a visible entrance, a guided route, four pass-through scoring markers, a jackpot endpoint, and an exit. The Split Rail uses the diverter setting to vary its path and payout.
 
-- Start with **$280**, two permanent starter bumpers and one automatically moving ball.
-- Earn only **$1–$5 per ordinary hit**, plus a little more from upgrades and rail bonuses.
-- Buy extra balls using **+ BALL**, starting at $20 and increasing as more balls are active. Six is the maximum.
-- One ball is **always available**: when a ball drains, a new one automatically appears.
-- After a weak scoring round, there is a small maintenance fee, based in part on the total cost of installed bumpers. If you're losing money, extra balls disappear progressively. At low funds, all extras are removed.
-- Your cash **cannot go below $75**. You cannot purchase anything that would breach the protected minimum.
-- Selling bumpers refunds part of the purchase price (including part of upgrade investment).
+For a Custom Rail, choose its shop button in Build mode and click two pegs to set the entrance and exit. Build costs and the protected $75 cash minimum still apply.
 
-Your game and table configuration save in the browser using `localStorage` under `nexus-pinball-tycoon-v2`. It is a new V2 save, leaving the old V1 save untouched. Clearing site storage deletes this V2 progress.
+## Eight machines and hotkeys
 
-## Controls
+| Key | Machine | Effect |
+| --- | --- | --- |
+| 1 | Gravity Switch | Reverse downward gravity briefly |
+| 2 | Rail Diverter | Switch the split-rail path |
+| 3 | Magnet Pulse | Pull balls toward the center temporarily |
+| 4 | Emergency Flipper | Add upper flippers and give a recovery push |
+| 5 | Jackpot Button | Claim a prize after sufficient bumper hits |
+| 6 | Multiball Trigger | Spawn bonus balls after charging it with hits |
+| 7 | Speed Gate | Accelerate balls through a central area, plus manual boost |
+| 8 | Ball Elevator | Guide a low ball to the upper field |
 
-- **A / Left arrow** — left flipper, hold to keep raised.
-- **D / Right arrow** — right flipper, hold to keep raised.
-- **Space** — buy/drop an additional ball (not necessary to launch the free ball).
-- **B** — toggle Build mode.
-- **M** — toggle floating menu.
-- **F** — request browser fullscreen.
-- On touchscreens, use the bottom flipper buttons.
-- The floating menu includes sound toggle, workshop reset (with refunds), and round reset.
+Click a machine to purchase it, then press its number to activate it. Some owned machines also have passive effects. Active ones have cooldowns.
 
-## Collision physics
+## Mouse & building controls
 
-Fixed timestep simulation at **240 updates per second**, ball speed capped to 970 board units/second, small incremental flipper angles and circle/capsule collision separation. These reduce tunneling when objects collide. Only Ultra Phase bumpers and the guided rail paths deliberately let balls pass through certain targets.
+- **B** toggles Build/Play. Build pauses the pinball balls.
+- **Drag a bumper from the shop** onto a table peg, or select one and click an empty peg.
+- **Drag an owned bumper** to move it onto another valid peg.
+- **Right-click a bumper** to Upgrade / Move / Sell / Info.
+- **Mouse wheel** zooms the table during Build mode.
+- **Middle mouse drag** pans it.
+- **Shift-click** selects several bumpers; use batch Upgrade or Sell in the menu.
+- **Brush** places multiple selected bumpers while dragging across pegs (each purchased separately).
+- **Trajectory preview** draws an approximate launch curve while hovering; it is not a predictive physics simulator.
+- **A / D** or **left/right arrows** hold the flippers; **Space** buys an extra ball.
+- Touch users get dedicated flipper buttons.
+- **M** toggles the menu, **F** fullscreen.
 
-## Development notes
+### Economy and progression
 
-This is a browser-based HTML/CSS/JavaScript prototype. The target Nexus S06 smartwatch hardware is a **separate embedded port**, not yet programmed.
+- Start with $280 and a Steel ball. Free balls automatically respawn on draining.
+- Earn small amounts from bumper hits. Weak rounds charge maintenance, sometimes taking away extra balls.
+- Extra balls can be purchased; the count is capped at six. The balance has a firm **$75 floor**.
+- **Contracts** award a one-time cash bonus when the stated hit/rail target is met.
+- **Research** buys levels that give occasional bonus cash.
+- **Table Value** reports total investment.
+- **Efficiency** identifies the highest-earning bumper types.
+- **Blueprints** provide three slots. Switching layout sells existing equipment at partial refunds and repurchases the new layout; there is no free duplication.
+- **Prestige** is available after 50,000 score, three contracts and $5,000 cash. It resets the current workshop for a permanent earning bonus.
 
-Future ideas: camera-positioned rails, unlockable table shapes, visual gravity vector editor, drag/drop shop interface, combo missions and more.
+## QA notes
+
+The merged game passed JavaScript parsing and interaction/simulation checks covering all seven map selections, shop generation, buying all 17 bumper types, selecting all eight ball types, unlocking eight machines, rail purchases including the two-socket custom rail, render execution, research, blueprints, and saved-data reloads. **These are scripted simulation checks, not an exhaustive hands-on graphical browser playtest.** Feedback from actual play is welcome, especially about balance, collision behavior and the map paths.
+
+Collision handling uses a fixed **240 Hz simulation step**, bounded ball speeds, continuous small-step flipper rotation and separation for solid circles/capsules. Deliberately non-solid interactions include Phase bumpers and elevated guided rail/loop paths.
+
+## Next improvements
+
+- A true 2D gravity-vector editor for bespoke maps, rather than guide-only loops.
+- More realistic split-table geometry and distinct map-specific art.
+- A genuine predictive trajectory preview that accounts for built equipment.
+- Optimization for the Waveshare S06 smartwatch after the browser version is stable. This is **not yet running on watch hardware**.
