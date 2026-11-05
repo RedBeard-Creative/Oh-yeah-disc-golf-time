@@ -828,12 +828,26 @@ function render(){
  g.fillStyle='#091b30d7';g.fillRect(0,0,W,68);g.textAlign='left';g.fillStyle=COLORS.blue;g.font='900 27px system-ui';g.fillText('PINBALL',16,30);g.fillStyle=COLORS.pink;g.fillText('TYCOON',161,30);
  g.fillStyle='#b8def7';g.font='bold 12px monospace';g.fillText('SCORE '+score.toLocaleString(),16,53);
  g.textAlign='right';g.fillStyle=COLORS.green;g.fillText(maps[mode]?.title||'PINBALL',584,53);
- const border=[[60,112],[60,656],[133,714]];polyline(border,COLORS.blue,3);polyline([[508,112],[508,655],[432,713]],COLORS.blue,3);neonLine(60,112,95,85,COLORS.blue);neonLine(95,85,470,85,COLORS.blue);neonLine(470,85,508,112,COLORS.blue);
+ const trim=maps[mode];
+ raisedRail([[60,112],[60,656],[133,714]],trim.accent,.68,true);
+ raisedRail([[508,112],[508,655],[432,713]],trim.accent,.68,true);
+ raisedRail([[60,112],[95,85],[470,85],[508,112]],trim.secondary,.55,true);
  drawRailNetwork();
-if(mode==='hourglass'){polyline([[58,365],[228,425]],COLORS.pink,6);polyline([[342,425],[507,365]],COLORS.pink,6)}
+if(mode==='hourglass'){
+ raisedRail([[58,365],[228,425]],trim.accent,.62,true);
+ raisedRail([[342,425],[507,365]],trim.accent,.62,true);
+}
 if(mode==='orbital'){circle(284,369,95,COLORS.purple);circle(284,369,38,COLORS.blue);g.fillStyle=COLORS.purple;g.textAlign='center';g.font='bold 11px system-ui';g.fillText('GRAVITY WELL',284,377)}
-if(mode==='twins'){neonLine(285,152,285,347,COLORS.purple,5);neonLine(285,422,285,670,COLORS.purple,5);g.textAlign='center';g.font='bold 15px system-ui';g.fillStyle=COLORS.gold;g.fillText('TWIN TABLES',284,130)}
-if(mode==='tower'){neonLine(57,306,379,306,COLORS.pink,5);neonLine(199,490,509,490,COLORS.blue,5);g.textAlign='center';g.font='bold 14px system-ui';g.fillStyle=COLORS.gold;g.fillText('GRAVITY TOWER',280,128)}
+if(mode==='twins'){
+ raisedRail([[285,152],[285,347]],trim.accent,.65,true);
+ raisedRail([[285,422],[285,670]],trim.accent,.65,true);
+ g.textAlign='center';g.font='bold 15px system-ui';g.fillStyle=trim.secondary;g.fillText('TWIN TABLES',284,130)
+}
+if(mode==='tower'){
+ raisedRail([[57,306],[379,306]],trim.accent,.68,true);
+ raisedRail([[199,490],[509,490]],trim.secondary,.68,true);
+ g.textAlign='center';g.font='bold 14px system-ui';g.fillStyle=trim.accent;g.fillText('GRAVITY TOWER',280,128)
+}
  if(mode==='flip'){const a=phaseTimer*.24;g.textAlign='center';g.font='bold 20px system-ui';g.fillStyle=COLORS.purple;g.fillText('GRAVITY FIELD',285,117);g.beginPath();g.moveTo(285,157);g.lineTo(285+Math.sin(a)*33,157+Math.cos(a)*33);g.strokeStyle=COLORS.green;g.lineWidth=5;g.stroke()}
  for(const socket of pegGrid){g.fillStyle='#335876';g.beginPath();g.arc(socket.x,socket.y,5,0,TAU);g.fill();if(isBuild){g.strokeStyle='#4f8dbf';g.lineWidth=1;g.beginPath();g.arc(socket.x,socket.y,10,0,TAU);g.stroke()}}
  for(const b of starter)drawBumper(b.x,b.y,b.kind,1);
