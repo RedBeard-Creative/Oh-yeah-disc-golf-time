@@ -133,6 +133,10 @@ function runSmoke(source) {
   p.node('board').onpointerdown({clientX:417,clientY:595,pointerId:2,button:0,preventDefault(){}});
   p.node('board').fire('pointerup',{clientX:417,clientY:595,pointerId:2});
   ok(a.get().rails.custom===true,'custom rail built from two selected pegs');
+  const thickBefore=p.drawing.strokes.filter(w=>w>=21).length;
+  const railFrame=p.frames.shift();railFrame(16);
+  const thickAfter=p.drawing.strokes.filter(w=>w>=21).length;
+  ok(thickAfter-thickBefore>=12,'purchased rail network renders multiple raised metal sides and rims');
   a.toggleBuild(false);a.setBall(71,497,0,-100);a.step(2);
   ok(a.get().ballStates[0].path==='rail','ball captures into rail entrance');
   const pts=a.get().score;a.step(800);
