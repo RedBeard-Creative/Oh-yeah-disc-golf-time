@@ -1,23 +1,39 @@
-# G32 Neon Pinball — Nexus Arcade
+# G32 — Neon Pinball V3
 
-A standalone, full-size, browser-based arcade pinball game. Built with HTML, CSS and JavaScript Canvas and no external dependencies.
+A **full-size arcade pinball game**, independent of the watch screen. Runs in any modern desktop or mobile browser, and in StackBlitz.
 
 ## Play
 
-Open this repository in [StackBlitz](https://stackblitz.com/github/RedBeard-Creative/Oh-yeah-disc-golf-time) or open `index.html` directly in your browser.
+**[Open it in StackBlitz](https://stackblitz.com/github/RedBeard-Creative/Oh-yeah-disc-golf-time)**
 
-- **Space** — launch the ball through the right-hand chute
-- **A / Left arrow** — hold left flipper
-- **D / Right arrow** — hold right flipper
-- **N** — nudge a ball (3 nudges per game)
-- **P** — pause
-- On touchscreens, tap either lower half of the playfield for the corresponding flipper.
-- Restart, mute, and launch buttons are shown beside the table.
+- **Space** — launch ball via the right-side plunger lane.
+- **A / Left arrow** — hold the left flipper up.
+- **D / Right arrow** — hold the right flipper up.
+- **N** — nudge (3 per game).
+- **P** — pause.
+- Touchscreen: press the large flipper controls or the lower part of each side of the playfield.
+- Restart, mute, launch and pause buttons are alongside the table.
 
-Includes 3-ball games, colorful bumpers, bonus target banks, multipliers, persistent local high score, and a safe open route from the launcher into play.
+## V3 features
 
-## Notes
+- Enlarged responsive pinball table with higher-resolution canvas (720 × 1008 drawing buffer, 600 × 840 game units).
+- 11 colored reactive bumpers with varying point values.
+- Five purple bonus targets: hit all for a 2,000 point bank bonus.
+- Four prize targets: 750-point bonus, multiplier upgrade, 2,500-point jackpot and an extra ball.
+- Hit all four prize targets to earn an additional 5,000 points.
+- Bumper combos and multiplier upgrades.
+- **Real drain gap** between the two flippers.
+- Each flipper moves once per fixed simulation update and calculates the collision impulse from its moving surface; flippers remain raised while keys/buttons are held.
+- Three balls to start; up to five via extra-ball prizes.
+- Persistent high score stored locally in the browser.
+- Standalone HTML/CSS/JS without runtime external dependencies.
 
-This prototype is a regular pinball game, *not* a smartwatch-sized game. We can adapt it for the Waveshare S06 280×456 AMOLED later.
+## Local use
 
-The previous disc-golf project can still be recovered through the repository's Git history. Older files are not used by the new standalone `index.html`.
+Save the root `index.html` and open it in a modern browser. No build tools are needed for direct play.
+
+The earlier disc golf game remains recoverable through Git history but is no longer the default page.
+
+## Project Nexus
+
+This is a browser prototype of **G32 Neon Pinball**. The S06 AMOLED watch hardware is a separate project. Adapting the game to that screen would require embedded C++ graphics and more optimization.
