@@ -181,6 +181,31 @@ const bumperTypes={
 let cash=1500,playerBumpers=[],chosenKind='basic',selectedPlacedId=null,buildMode=false,pausedBeforeBuild=false,buildHover=null,nextBumperId=1;
 function saveTycoon(){try{localStorage.setItem('nexus-g32-tycoon-v1',JSON.stringify({cash,bumps:playerBumpers.map(b=>({id:b.id,x:b.x,y:b.y,kind:b.kind,level:b.level}))}))}catch(e){}}
 
+
+function canPlace(x,y,kind){
+ const t=bumperTypes[kind];if(!t||!Number.isFinite(x)||!Number.isFinite(y))return false;
+ if(x<76+t.r||x>501-t.r||y<220+t.r||y>649-t.r)return false;
+ for(const b of bumpers)if(Math.hypot(x-b.x,y-b.y)<t.r+b.r+14)return false;
+ for(const b of playerBumpers)if(Math.hypot(x-b.x,y-b.y)<t.r+bumperTypes[b.kind].r+13)return false;
+ for(const p of prizes)if(Math.hypot(x-p.x,y-p.y)<t.r+p.r+15)return false;
+ for(const p of pegs)if(Math.hypot(x-p.x,y-p.y)<t.r+p.r+13)return false;
+ if(ball&&!ball.inLane&&Math.hypot(x-ball.x,y-ball.y)<t.r+ball.r+14)return false;
+ return true;
+}
+function loadTycoon(){
+ try{
+  const d=JSON.parse(localStorage.getItem('nexus-g32-tycoon-v1')||'null');
+  if(!d)return;
+  if(Number.isFinite(d.cash))cash=Math.max(0,Math.floor(d.cash));
+  for(const b of (Array.isArray(d.bumps)?d.bumps.slice(0,20):[])){
+   if(!bumperTypes[b.kind]||!Number.isFinite(b.x)||!Number.isFinite(b.y))continue;
+   const c={id:Number.isFinite(b.id)?Math.floor(b.id):nextBumperId++,x:b.x,y:b.y,kind:b.kind,level:Math.max(1,Math.min(3,Math.floor(b.level)||1)),hit:-100};
+   if(canPlace(c.x,c.y,c.kind))playerBumpers.push(c);
+  }
+  nextBumperId=Math.max(nextBumperId,1,...playerBumpers.map(b=>b.id+1));
+ }catch(e){}
+}
+
 canvas.addEventListener('pointerdown',e=>{e.preventDefault();canvas.setPointerCapture(e.pointerId);const bounds=canvas.getBoundingClientRect(),x=(e.clientX-bounds.left)*W/bounds.width,y=(e.clientY-bounds.top)*H/bounds.height;if(buildMode){handleBuildTap(x,y);return}if(phase!=='playing'){launch();return}if(y>410){const side=x<W/2?'left':'right';pointerFlips.set(e.pointerId,side);flip(side,true)}});
 for(const eventName of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(eventName,e=>{const side=pointerFlips.get(e.pointerId);pointerFlips.delete(e.pointerId);if(side)flip(side,[...pointerFlips.values()].includes(side))});
 function segment(ax,ay,bx,by,boost=1.0,onCollision=null){
