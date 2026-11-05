@@ -561,6 +561,7 @@ function placeAtPeg(index,shift=false){
 canvas.onpointerdown=e=>{
  e.preventDefault();
  const pt=boardPoint(e);
+ if(e.button===2)return;
  if(e.button===1){
   dragging={type:'pan',startX:e.clientX,startY:e.clientY,x:panX,y:panY};
   canvas.setPointerCapture(e.pointerId);return
@@ -669,7 +670,8 @@ if(mode==='tower'){neonLine(57,306,379,306,COLORS.pink,5);neonLine(199,490,509,4
  if(isBuild&&selected===part.id)circle(p.x,p.y,types[part.kind].r+sweep+8,'#fff',false)
 }
  for(const [side,r] of Object.entries(railSpecs)){
- const p=r.entry;g.save();g.globalAlpha=rails[side]?1:.32;circle(p[0],p[1],side==='rescue'?16:11,rails[side]?COLORS.gold:COLORS.blue);
+ const activePath=rails[side]?railPathFor(side):null;
+ const p=activePath?activePath.points[0]:r.entry;g.save();g.globalAlpha=rails[side]?1:.32;circle(p[0],p[1],side==='rescue'?16:11,rails[side]?COLORS.gold:COLORS.blue);
  if(rails[side]){
   const path=railPathFor(side);polyline(path.points,COLORS.gold,2.6);
   for(const marker of [.24,.43,.62,.81]){const pt=posOn(path,path.total*marker);circle(pt.x,pt.y,7,COLORS.purple)}
