@@ -509,7 +509,7 @@ function loadBlueprint(){const slot=blueprintSlot(),p=blueprints[slot];if(!p){me
  const cost=p.parts.reduce((v,b)=>v+types[b.kind].cost+(b.level-1)*types[b.kind].cost*.7,0)+Object.entries(p.rails).reduce((v,[k,on])=>v+(on&&railSpecs[k]?railSpecs[k].price:0),0);
  const net=Math.ceil(cost-oldRefund);if(wallet-net<MIN_CASH){message('Need $'+net+' net to load blueprint.');return}
  if(!confirm('Switch to blueprint '+(slot+1)+'? Old parts will be refunded and new ones purchased ($'+net+' net).'))return;
- cashChange(-net);parts=p.parts.map(b=>({id:idCounter++,kind:b.kind,index:b.index,level:b.level,cooldown:0}));rails={...p.rails};customRailPoints=[...(p.customRailPoints||[])];mode=maps[p.mode]?p.mode:mode;balls=[];ensureBall();selected=null;selectedIds.clear();save();refreshShop();message('Loaded blueprint '+(slot+1))
+ cashChange(-net);parts=p.parts.map(b=>({id:idCounter++,kind:b.kind,index:b.index,level:b.level,cooldown:0}));rails={...p.rails};customRailPoints=[...(p.customRailPoints||[])];mode=maps[p.mode]&&mapUnlocks[p.mode]?p.mode:mode;applyMapTheme();balls=[];ensureBall();selected=null;selectedIds.clear();save();refreshShop();message('Loaded blueprint '+(slot+1))
 }
 $('contract').onclick=doContract;$('research').onclick=doResearch;$('prestige').onclick=doPrestige;$('efficiency').onclick=showEfficiency;
 $('save-plan').onclick=saveBlueprint;$('load-plan').onclick=loadBlueprint;
