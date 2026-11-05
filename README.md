@@ -1,51 +1,44 @@
-# G32 — Neon Pinball V3
+# G32 — Neon Pinball Tycoon
 
-A **full-size arcade pinball game**, independent of the watch screen. Runs in any modern desktop or mobile browser, and in StackBlitz.
+Make your own pinball machine and play it in your browser!
 
-## Play
+## Play in StackBlitz
 
-**[Open it in StackBlitz](https://stackblitz.com/github/RedBeard-Creative/Oh-yeah-disc-golf-time)**
+[**Open Pinball Tycoon**](https://stackblitz.com/github/RedBeard-Creative/Oh-yeah-disc-golf-time)
 
-- **Space** — launch ball via the right-side plunger lane.
-- **A / Left arrow** — hold the left flipper up.
-- **D / Right arrow** — hold the right flipper up.
-- **N** — nudge (3 per game).
-- **P** — pause.
-- Touchscreen: press the large flipper controls or the lower part of each side of the playfield.
-- Restart, mute, launch and pause buttons are alongside the table.
+Open the StackBlitz preview in a separate browser tab for a distraction-free view. Use the **⛶** fullscreen button if desired.
 
-## V3 features
+## Build your own table
 
-- Enlarged responsive pinball table with higher-resolution canvas (720 × 1008 drawing buffer, 600 × 840 game units).
-- 11 colored reactive bumpers with varying point values.
-- Five purple bonus targets: hit all for a 2,000 point bank bonus.
-- Four prize targets: 750-point bonus, multiplier upgrade, 2,500-point jackpot and an extra ball.
-- Hit all four prize targets to earn an additional 5,000 points.
-- Bumper combos and multiplier upgrades.
-- **Real drain gap** between the two flippers.
-- Each flipper moves once per fixed simulation update and calculates the collision impulse from its moving surface; flippers remain raised while keys/buttons are held.
-- Three balls to start; up to five via extra-ball prizes.
-- Persistent high score stored locally in the browser.
-- Standalone HTML/CSS/JS without runtime external dependencies.
+1. Click **🛠 BUILD** (upper-right) or press **B**. The game pauses while you edit.
+2. Choose a bumper in the floating shop:
+   - **Classic** — $350, 150 points per hit
+   - **Power** — $750, 350 points, stronger bounce
+   - **Gold** — $1,500, 800 points
+3. The shop closes. **Click or tap a clear location on the pinball table to place it**. The outlined region is the buildable area; a ghost shows valid/invalid placement.
+4. Click a placed bumper to select it, then use **Upgrade** or **Sell** in the menu.
+5. Click **✓ PLAY** / **DONE BUILDING** or press **B** to resume the game.
+6. Earn cash while playing: **7% of your scoring points** become shop cash, in addition to your arcade score.
 
-## Local use
+Each bumper has three levels; upgrading increases its point value. You can place up to **20 custom bumpers**. You start with $1,500 and three permanent starter bumpers. You cannot overlap existing bumpers, prizes, or the flipper area.
 
-Save the root `index.html` and open it in a modern browser. No build tools are needed for direct play.
+**Cash and your table layout save automatically in your browser's localStorage.** Clearing site data may remove the save. New Game resets balls/score but keeps your workshop progress.
 
-The earlier disc golf game remains recoverable through Git history but is no longer the default page.
+## Controls
 
-## Project Nexus
+- **Space** — launch ball from right-hand plunger lane
+- **A / Left arrow** — hold left flipper
+- **D / Right arrow** — hold right flipper
+- **B** — toggle build mode
+- **M** — show/hide floating menu
+- **F** — request fullscreen
+- **N** — nudge (3 per game)
+- **P** — pause
+- On touch devices, tap the lower sides of the playfield or the FLIP buttons.
 
-This is a browser prototype of **G32 Neon Pinball**. The S06 AMOLED watch hardware is a separate project. Adapting the game to that screen would require embedded C++ graphics and more optimization.
+Other features: neon bumper physics, five target-bank goals, four bonus prize targets, point multipliers, extra balls, and locally saved high scores.
 
-## Full-screen mode and floating menu (V4)
+## Development
 
-The arcade page now removes the permanent sidebar and header so the whole game view is used for pinball.
+This is an HTML/JavaScript Canvas browser prototype, independent of physical smartwatch hardware. The next version can add draggable/movable bumpers, more shop items, factory upgrades and unlockable tables. The previous disc-golf game is still available in Git history.
 
-- Click **☰** at the upper right to open the semi-transparent overlay with score, high score, controls and prize rules. Press **M** to toggle it, or **Esc** to close it.
-- Click **⛶** to request browser fullscreen, or press **F**. If you're using a StackBlitz embedded preview, first click the preview's **open in new tab** icon so the browser can display the game without the IDE.
-- The entire playfield fits within the viewport without cutting off the flippers.
-- On touchscreens, use the small lower-left and lower-right **FLIP** buttons or the corresponding lower sides of the playfield.
-- Keyboard controls remain **Space** to launch, **A/D** or **←/→** for flippers, **N** to nudge and **P** to pause.
-
-The underlying pinball physics and V3 scoring are preserved.
