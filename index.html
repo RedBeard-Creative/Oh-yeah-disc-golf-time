@@ -223,6 +223,58 @@ function updateShopUI(){
  $('sell-bumper').textContent=b?'↩ Sell ($'+Math.floor(bumperTypes[b.kind].cost*(.6+.25*(b.level-1)))+')':'↩ Sell selected';
 }
 
+
+function selectPlaced(id){
+ selectedPlacedId=id;
+ const b=playerBumpers.find(p=>p.id===id);
+ if(b)shopNote('Selected '+b.kind+' bumper (level '+b.level+'). Upgrade or sell it.');
+ updateShopUI();setMenu(true);
+}
+function handleBuildTap(x,y){
+ if(!buildMode)return;
+ const found=[...playerBumpers].reverse().find(b=>Math.hypot(b.x-x,b.y-y)<bumperTypes[b.kind].r+12);
+ if(found){selectPlaced(found.id);return}
+ if(!canPlace(x,y,chosenKind)){shopNote('Blocked spot! Try an open space away from obstacles.');return}
+ if(playerBumpers.length>=20){shopNote('Table full: maximum 20 custom bumpers.');setMenu(true);return}
+ const cfg=bumperTypes[chosenKind];
+ if(cash<cfg.cost){shopNote('Need $'+(cfg.cost-cash)+' more. Play to earn!');setMenu(true);return}
+ cash-=cfg.cost;playerBumpers.push({id:nextBumperId++,x:Math.round(x),y:Math.round(y),kind:chosenKind,level:1,hit:-100});
+ selectedPlacedId=null;saveTycoon();sync();sparks(x,y,cfg.color);beep(690,.09);
+ shopNote('Placed '+chosenKind+' for $'+cfg.cost+'. Click to place another!');
+}
+function setBuildMode(on){
+ if(on===buildMode)return;buildMode=on;
+ if(on){pausedBeforeBuild=paused;paused=true;flip('left',false);flip('right',false);shopNote('Select a type, then click the table.');setMenu(true)}
+ else{paused=pausedBeforeBuild;buildHover=null;selectedPlacedId=null;shopNote('Playing! Score points to earn more cash.');setMenu(false)}
+ updateShopUI();sync();
+}
+$('build-button').addEventListener('click',()=>setBuildMode(!buildMode));
+$('done-building').addEventListener('click',()=>setBuildMode(false));
+for(const el of document.querySelectorAll('.shop-item'))el.addEventListener('click',()=>{
+ chosenKind=el.dataset.kind;selectedPlacedId=null;
+ if(!buildMode)setBuildMode(true);
+ shopNote('Placing '+chosenKind+' for $'+bumperTypes[chosenKind].cost+'. Tap a clear space.');
+ updateShopUI();setMenu(false)
+});
+$('upgrade-bumper').addEventListener('click',()=>{
+ const b=playerBumpers.find(p=>p.id===selectedPlacedId);if(!buildMode||!b||b.level>=3)return;
+ const price=Math.ceil(bumperTypes[b.kind].cost*.65*b.level);
+ if(cash<price){shopNote('Earn $'+(price-cash)+' more first.');return}
+ cash-=price;b.level++;saveTycoon();sync();shopNote('Upgraded to level '+b.level+'!');
+});
+$('sell-bumper').addEventListener('click',()=>{
+ const at=playerBumpers.findIndex(p=>p.id===selectedPlacedId);if(at<0||!buildMode)return;
+ const b=playerBumpers[at],refund=Math.floor(bumperTypes[b.kind].cost*(.6+.25*(b.level-1)));
+ playerBumpers.splice(at,1);cash+=refund;selectedPlacedId=null;saveTycoon();sync();shopNote('Sold for $'+refund+'.');
+});
+canvas.addEventListener('pointermove',e=>{
+ if(!buildMode)return;const r=canvas.getBoundingClientRect();
+ buildHover={x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height};
+});
+canvas.addEventListener('pointerleave',()=>buildHover=null);
+window.addEventListener('keydown',e=>{if(e.code==='KeyB'&&!e.repeat){e.preventDefault();setBuildMode(!buildMode)}});
+loadTycoon();
+
 canvas.addEventListener('pointerdown',e=>{e.preventDefault();canvas.setPointerCapture(e.pointerId);const bounds=canvas.getBoundingClientRect(),x=(e.clientX-bounds.left)*W/bounds.width,y=(e.clientY-bounds.top)*H/bounds.height;if(buildMode){handleBuildTap(x,y);return}if(phase!=='playing'){launch();return}if(y>410){const side=x<W/2?'left':'right';pointerFlips.set(e.pointerId,side);flip(side,true)}});
 for(const eventName of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(eventName,e=>{const side=pointerFlips.get(e.pointerId);pointerFlips.delete(e.pointerId);if(side)flip(side,[...pointerFlips.values()].includes(side))});
 function segment(ax,ay,bx,by,boost=1.0,onCollision=null){
