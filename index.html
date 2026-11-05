@@ -343,7 +343,16 @@ function update(dt){tick++;
   sparks(b.x,b.y,b.color);beep(450+(b.x%150)*3,.045)
  }
 }
- for(const p of pegs)pegBounce(p.x,p.y,p.r,1.04);
+ for(const b of playerBumpers){
+ const cfg=bumperTypes[b.kind];
+ const hit=pegBounce(b.x,b.y,cfg.r,1.1+cfg.kick);
+ if(hit&&tick-b.hit>24){
+  b.hit=tick;addScore(Math.round(cfg.points*(1+.55*(b.level-1))),b.x,b.y);
+  bumperHits++;sparks(b.x,b.y,cfg.color);beep(540+cfg.points,.04);
+  if(bumperHits%7===0){level=Math.min(6,level+1);effects.push({x:b.x,y:b.y-32,text:'MULTIPLIER ×'+level,time:1.2})}
+ }
+}
+for(const p of pegs)pegBounce(p.x,p.y,p.r,1.04);
  for(const p of prizes){
   const hit=pegBounce(p.x,p.y,p.r,1.12);
   if(hit&&!p.lit){
@@ -376,7 +385,21 @@ function render(){
  for(const w of walls)line(...w,(w===walls[7]||w===walls[8])?palette.pink:palette.cyan,4,9);
  for(const t of targets){g.fillStyle=t.lit?'#9fffe4':'#8557bf';g.shadowColor=t.lit?palette.green:palette.purple;g.shadowBlur=16;g.fillRect(t.x-18,t.y-10,36,20);g.shadowBlur=0;g.strokeStyle='#c3a8ff';g.lineWidth=2;g.strokeRect(t.x-18,t.y-10,36,20)}
  for(const b of bumpers){glimmerCircle(b.x,b.y,b.r,b.color);g.save();g.fillStyle='#0c1a36';g.beginPath();g.arc(b.x,b.y,Math.max(4,b.r-9),0,TAU);g.fill();g.shadowColor=b.color;g.shadowBlur=15;g.fillStyle=b.color;g.beginPath();g.arc(b.x,b.y,6,0,TAU);g.fill();g.restore()}
- for(const p of prizes){
+ for(const b of playerBumpers){
+ const cfg=bumperTypes[b.kind];
+ glimmerCircle(b.x,b.y,cfg.r,cfg.color);
+ g.save();
+ g.fillStyle='#0c1830';g.beginPath();g.arc(b.x,b.y,Math.max(4,cfg.r-7),0,TAU);g.fill();
+ g.font='bold 15px system-ui';g.fillStyle=cfg.color;g.textAlign='center';
+ g.fillText(b.kind==='gold'?'★':b.kind==='power'?'⚡':'●',b.x,b.y+5);
+ g.fillStyle='#fff';g.font='bold 10px monospace';g.fillText('L'+b.level,b.x,b.y-cfg.r-6);
+ if(buildMode&&b.id===selectedPlacedId){
+  g.strokeStyle='#fff';g.lineWidth=3;g.setLineDash([6,4]);
+  g.beginPath();g.arc(b.x,b.y,cfg.r+11,0,TAU);g.stroke();g.setLineDash([])
+ }
+ g.restore();
+}
+for(const p of prizes){
   g.save();g.globalAlpha=p.lit?.38:1;g.shadowColor=p.color;g.shadowBlur=p.lit?2:15;g.fillStyle=p.lit?'#29405b':p.color;g.beginPath();g.arc(p.x,p.y,p.r,0,TAU);g.fill();g.fillStyle='#08162d';g.beginPath();g.arc(p.x,p.y,p.r-4,0,TAU);g.fill();
   g.globalAlpha=1;g.font='bold 10px system-ui';g.textAlign='center';g.fillStyle=p.lit?'#58728b':p.color;g.fillText(p.label,p.x,p.y-20);g.restore();
  }
@@ -389,9 +412,20 @@ function render(){
   g.save();g.shadowColor='#b6ffff';g.shadowBlur=24;g.fillStyle='#f1ffff';g.beginPath();g.arc(ball.x,ball.y,ball.r,0,TAU);g.fill();g.restore()}
  for(const e of effects){g.globalAlpha=Math.min(1,e.time*2);g.font='bold 18px system-ui';g.fillStyle='#c4ffea';g.textAlign='center';g.fillText(e.text,e.x,e.y)}g.globalAlpha=1;
  for(const p of particles){g.globalAlpha=Math.min(1,p.life*2);g.fillStyle=p.c;g.fillRect(p.x,p.y,4,4)}g.globalAlpha=1;
- if(phase==='ready'){g.fillStyle='#071329e7';g.fillRect(110,318,375,128);g.strokeStyle='#59c9ec';g.lineWidth=2;g.strokeRect(110,318,375,128);g.textAlign='center';g.fillStyle='#ecfaff';g.font='900 34px system-ui';g.fillText('READY TO PLAY?',295,360);g.font='bold 17px system-ui';g.fillStyle=palette.cyan;g.fillText('PRESS SPACE OR LAUNCH',295,393);g.font='13px system-ui';g.fillStyle='#aacce3';g.fillText('BALL STARTS IN THE RIGHT LANE',295,422)}
- if(phase==='over'){g.fillStyle='#061122e9';g.fillRect(0,84,W,756);g.textAlign='center';g.fillStyle=palette.pink;g.font='900 54px system-ui';g.fillText('GAME OVER',300,350);g.fillStyle='#e4ffff';g.font='bold 28px system-ui';g.fillText(score.toLocaleString()+' POINTS',300,400);g.font='17px system-ui';g.fillStyle=palette.cyan;g.fillText('PRESS LAUNCH FOR NEW GAME',300,450)}
- if(paused){g.fillStyle='#061122d9';g.fillRect(0,85,W,755);g.font='900 54px system-ui';g.fillStyle='#e4ffff';g.textAlign='center';g.fillText('PAUSED',300,414)}
+ if(buildMode){
+ g.save();g.fillStyle='#77dfff';g.globalAlpha=.08;g.fillRect(75,221,421,428);g.globalAlpha=1;
+ g.strokeStyle='#3daedd88';g.lineWidth=2;g.setLineDash([5,7]);g.strokeRect(75,221,421,428);g.setLineDash([]);
+ if(buildHover){
+  const cfg=bumperTypes[chosenKind],valid=canPlace(buildHover.x,buildHover.y,chosenKind);
+  g.fillStyle=valid?cfg.color:'#ff587b';g.globalAlpha=.35;g.beginPath();g.arc(buildHover.x,buildHover.y,cfg.r,0,TAU);g.fill();
+  g.globalAlpha=1;g.strokeStyle=valid?'#b1ffde':'#ff587b';g.lineWidth=3;g.beginPath();g.arc(buildHover.x,buildHover.y,cfg.r+3,0,TAU);g.stroke();
+ }
+ g.font='bold 17px system-ui';g.fillStyle='#bbf6ff';g.textAlign='center';
+ g.fillText('BUILD MODE · TAP TO PLACE',285,125);g.restore();
+}
+if(phase==='ready'&&!buildMode){g.fillStyle='#071329e7';g.fillRect(110,318,375,128);g.strokeStyle='#59c9ec';g.lineWidth=2;g.strokeRect(110,318,375,128);g.textAlign='center';g.fillStyle='#ecfaff';g.font='900 34px system-ui';g.fillText('READY TO PLAY?',295,360);g.font='bold 17px system-ui';g.fillStyle=palette.cyan;g.fillText('PRESS SPACE OR LAUNCH',295,393);g.font='13px system-ui';g.fillStyle='#aacce3';g.fillText('BALL STARTS IN THE RIGHT LANE',295,422)}
+ if(phase==='over'&&!buildMode){g.fillStyle='#061122e9';g.fillRect(0,84,W,756);g.textAlign='center';g.fillStyle=palette.pink;g.font='900 54px system-ui';g.fillText('GAME OVER',300,350);g.fillStyle='#e4ffff';g.font='bold 28px system-ui';g.fillText(score.toLocaleString()+' POINTS',300,400);g.font='17px system-ui';g.fillStyle=palette.cyan;g.fillText('PRESS LAUNCH FOR NEW GAME',300,450)}
+ if(paused&&!buildMode){g.fillStyle='#061122d9';g.fillRect(0,85,W,755);g.font='900 54px system-ui';g.fillStyle='#e4ffff';g.textAlign='center';g.fillText('PAUSED',300,414)}
 }
 function loop(time){let dt=Math.min(.04,(time-lastRender)/1000);lastRender=time;if(!paused){acc=Math.min(.1,acc+dt);let loops=0;while(acc>=FIXED&&loops++<12){update(FIXED);acc-=FIXED}}else acc=0;render();requestAnimationFrame(loop)}
 restart();requestAnimationFrame(loop);
