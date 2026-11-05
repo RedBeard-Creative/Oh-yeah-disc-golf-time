@@ -235,7 +235,7 @@ $('upgrade').onclick=()=>{const b=selectedPart();if(!b||b.level>=3)return;const 
 $('sell').onclick=()=>{const b=selectedPart();if(!b)return;const refund=Math.round(types[b.kind].cost*.65+(b.level-1)*types[b.kind].cost*.35);cashChange(refund);parts=parts.filter(p=>p.id!==b.id);selected=null;movingId=null;save();refreshShop();message('Sold bumper for $'+refund+'.')};
 $('move').onclick=()=>{const b=selectedPart();if(!b)return;movingId=b.id;message('Now tap an empty peg to move the selected bumper.');showMenu(false);refreshShop()};
 $('buy-ball').onclick=()=>dropBall(true);$('spam').onclick=()=>dropBall(true);
-$('mobile-launch').onclick=()=>dropBall(false);
+$('mobile-launch').onclick=()=>dropBall(true);
 $('reset-round').onclick=()=>{balls=[];income=0;ensureBall();message('New round started. Your table and cash remain.');refreshShop()};
 $('sound').onclick=()=>{soundOn=!soundOn;$('sound').textContent=soundOn?'♫ SOUND ON':'♫ SOUND OFF'};
 $('clear-layout').onclick=()=>{if(!confirm('Sell ALL owned bumpers for partial refunds and remove both rails?'))return;for(const b of parts)cashChange(Math.round(types[b.kind].cost*.65));parts=[];for(const side of ['left','right'])if(rails[side]){cashChange(450);rails[side]=false}selected=null;movingId=null;save();refreshShop();message('Layout cleared and partial refunds issued.')};
@@ -287,7 +287,7 @@ function updateFlippersOne(f,dt){const target=f.hold?f.up:f.rest,delta=clamp(tar
 let last=performance.now(),acc=0,frames=0;
 function frame(t){acc+=Math.min(.05,(t-last)/1000);last=t;let steps=0;while(acc>=DT&&steps++<16){step(DT);acc-=DT}if(steps>=16)acc=0;render();if(++frames%20===0){refreshShop();if(savePending){save();savePending=false}}requestAnimationFrame(frame)}
 load();ensureBall();refreshShop();requestAnimationFrame(frame);
-window.__pinballTest={get:()=>({wallet,score,mode,balls:balls.length,parts:parts.map(p=>({...p})),rails:{...rails},selected,isBuild,flippers:{left:left.a,right:right.a}}),step:(n=1)=>{for(let i=0;i<n;i++)step(DT)},canBuild,selectPeg,toggleBuild,chooseMode,spawn,dropBall,setBall:(x,y,vx,vy)=>{const b=balls[0]||spawn();b.modePath=null;b.x=x;b.y=y;b.vx=vx;b.vy=vy},walletSet:v=>wallet=v,partSet:(index,kind)=>{parts.push({id:idCounter++,kind,index,level:1,cooldown:0})}};
+window.__pinballTest={get:()=>({wallet,score,mode,balls:balls.length,ballStates:balls.map(b=>({x:b.x,y:b.y,vx:b.vx,vy:b.vy,path:b.modePath?.kind||null})),income,parts:parts.map(p=>({...p})),rails:{...rails},selected,isBuild,flippers:{left:left.a,right:right.a,leftHeld:left.hold,rightHeld:right.hold}}),step:(n=1)=>{for(let i=0;i<n;i++)step(DT)},canBuild,selectPeg,toggleBuild,chooseMode,spawn,dropBall,setBall:(x,y,vx,vy)=>{const b=balls[0]||spawn();b.modePath=null;b.x=x;b.y=y;b.vx=vx;b.vy=vy},walletSet:v=>{wallet=v;refreshShop()},hold:(side,on)=>{(side==='left'?left:right).hold=on},cashChange,setback,partSet:(index,kind)=>{parts.push({id:idCounter++,kind,index,level:1,cooldown:0})}};
 })();
 </script>
 </body></html>
