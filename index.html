@@ -206,6 +206,23 @@ function loadTycoon(){
  }catch(e){}
 }
 
+
+function shopNote(t){$('tycoon-message').textContent=t}
+function updateShopUI(){
+ if(!$('hud-cash'))return;
+ $('hud-cash').textContent='$'+cash.toLocaleString();$('shop-cash').textContent='$'+cash.toLocaleString();$('shop-count').textContent=playerBumpers.length+' / 20';
+ $('hud-mode').textContent=buildMode?'BUILD':'PLAY';
+ $('build-button').classList.toggle('active',buildMode);
+ $('build-button').textContent=buildMode?'✓ PLAY':'🛠 BUILD';$('build-hint').hidden=!buildMode;
+ for(const el of document.querySelectorAll('.shop-item'))el.classList.toggle('active',el.dataset.kind===chosenKind);
+ const b=playerBumpers.find(p=>p.id===selectedPlacedId);
+ const price=b?Math.ceil(bumperTypes[b.kind].cost*.65*b.level):0;
+ $('upgrade-bumper').disabled=!buildMode||!b||b.level>=3||cash<price;
+ $('sell-bumper').disabled=!buildMode||!b;
+ $('upgrade-bumper').textContent=b?'⬆ Level '+(b.level+1)+' ($'+price+')':'⬆ Upgrade selected';
+ $('sell-bumper').textContent=b?'↩ Sell ($'+Math.floor(bumperTypes[b.kind].cost*(.6+.25*(b.level-1)))+')':'↩ Sell selected';
+}
+
 canvas.addEventListener('pointerdown',e=>{e.preventDefault();canvas.setPointerCapture(e.pointerId);const bounds=canvas.getBoundingClientRect(),x=(e.clientX-bounds.left)*W/bounds.width,y=(e.clientY-bounds.top)*H/bounds.height;if(buildMode){handleBuildTap(x,y);return}if(phase!=='playing'){launch();return}if(y>410){const side=x<W/2?'left':'right';pointerFlips.set(e.pointerId,side);flip(side,true)}});
 for(const eventName of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(eventName,e=>{const side=pointerFlips.get(e.pointerId);pointerFlips.delete(e.pointerId);if(side)flip(side,[...pointerFlips.values()].includes(side))});
 function segment(ax,ay,bx,by,boost=1.0,onCollision=null){
