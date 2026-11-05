@@ -96,8 +96,8 @@ const types={
 const pegGrid=[];for(let row=0;row<7;row++)for(let col=0;col<7;col++)pegGrid.push({col,row,x:102+col*63,y:187+row*68,key:col+'-'+row});
 const starter=[{x:228,y:323,r:27,kind:'basic',score:80,points:1},{x:353,y:323,r:25,kind:'power',score:150,points:1}];
 const railPaths={
- left:[[71,497],[69,390],[67,256],[81,170],[160,132],[250,132],[314,150],[381,179],[431,239],[438,309],[384,351]],
- right:[[482,497],[483,381],[485,254],[465,172],[393,135],[314,131],[250,147],[205,184],[179,246],[193,317],[249,359]]
+ left:[[71,497],[69,390],[67,256],[81,170],[160,132],[250,132],[314,150],[381,179],[431,239],[438,309],[294,379]],
+ right:[[482,497],[483,381],[485,254],[465,172],[393,135],[314,131],[250,147],[205,184],[179,246],[193,317],[294,379]]
 };
 const uPath=[[112,675],[108,540],[108,392],[108,244],[133,164],[225,110],[352,110],[445,168],[466,246],[466,402],[466,550]];
 let wallet=280,score=0,best=0,income=0,roundHits=0,mode='classic',isBuild=false,selectedKind='basic',selected=null,
@@ -165,7 +165,7 @@ function flipperBall(b,f){const dx=Math.cos(f.a)*f.len,dy=Math.sin(f.a)*f.len;
  if(Math.abs(f.omega)>1&&f.hold){b.vy=Math.min(b.vy,-640);b.vx+=(f===left?1:-1)*80;sound(310,.03)}}
 }
 function advancePath(b,dt){const ride=b.modePath;if(!ride)return false;ride.at+=ride.speed*dt;const p=posOn(ride.path,ride.at);b.x=p.x;b.y=p.y;if(ride.kind==='u'){b.gravityDirection=p.dx>0.5?'RIGHT':p.dy<-.4?'UP':'DOWN'}if(ride.at>=ride.path.total){b.modePath=null;b.x=p.x;b.y=p.y;b.vx=p.dx*490-(ride.kind==='u'?260:40);b.vy=Math.max(130,p.dy*480);
- if(ride.kind==='rail'){const reward=15;cashChange(reward);addPoints(1800,0,b.x,b.y,COLORS.gold);notify('RAIL PRIZE +$'+reward,b.x,b.y-32,COLORS.gold);sound(1030,.16)}
+ if(ride.kind==='rail'){const reward=15;cashChange(reward);income+=reward;addPoints(1800,0,b.x,b.y,COLORS.gold);notify('RAIL PRIZE +$'+reward,b.x,b.y-32,COLORS.gold);sound(1030,.16)}
  return true}return true}
 function tryRail(b){if(b.rail||b.modePath||clock<railCooldown)return;
  for(const side of ['left','right']){if(!rails[side])continue;const entry=side==='left'?railPaths.left[0]:railPaths.right[0];if(Math.hypot(b.x-entry[0],b.y-entry[1])<23&&b.vy<200){attach(b,side==='left'?leftRail:rightRail,'rail',side);railCooldown=clock+.55;sound(790,.06);return}}
@@ -197,7 +197,7 @@ function refreshShop(){const b=selectedPart();
  $('cash').textContent='$'+wallet.toLocaleString();
  $('score').textContent=score.toLocaleString();$('best').textContent=best.toLocaleString();
  $('income').textContent='$'+income;$('active-balls').textContent=balls.length;$('owned').textContent=parts.length+'/26';
- $('selection').textContent=b?b.kind.toUpperCase()+' L'+b.level:selected?.startsWith('rail')?selected.toUpperCase():'None';
+ $('selection').textContent=b?b.kind.toUpperCase()+' L'+b.level:typeof selected==='string'&&selected.startsWith('rail')?selected.toUpperCase():'None';
  $('builder').textContent=isBuild?'✓ PLAY':'🛠 BUILD';$('builder').classList.toggle('active',isBuild);$('placement-tip').hidden=!isBuild;
  for(const el of document.querySelectorAll('.shop-item'))el.classList.toggle('active',el.dataset.kind===selectedKind);
  for(const el of document.querySelectorAll('.mode'))el.classList.toggle('active',el.dataset.mode===mode);
@@ -230,7 +230,7 @@ document.addEventListener('fullscreenchange',()=>$('full').textContent=document.
 document.addEventListener('pointerdown',e=>{if(!$('overlay').hidden&&!$('overlay').contains(e.target)&&!$('menu').contains(e.target)&&!$('builder').contains(e.target)&&e.target!==canvas)showMenu(false)});
 for(const el of document.querySelectorAll('.shop-item'))el.onclick=()=>{selectedKind=el.dataset.kind;selected=null;movingId=null;if(!isBuild)toggleBuild(true);showMenu(false);refreshShop()};
 for(const el of document.querySelectorAll('.mode'))el.onclick=()=>chooseMode(el.dataset.mode);
-for(const side of ['left','right'])$('rail-'+side).onclick=()=>{if(rails[side]){selected='rail-'+side;message('Rail '+side+' is installed. Rails are permanent upgrades in this version.');refreshShop();return}if(wallet-900<MIN_CASH){message('Not enough cash to install a rail.');return}cashChange(-900);rails[side]=true;message('Installed the '+side+' rail!');sound(1020,.13);save();refreshShop()};
+for(const side of ['left','right'])$('rail-'+side).onclick=()=>{if(rails[side]){selected='rail-'+side;message('Rail '+side+' is installed. Rails are permanent upgrades in this version.');refreshShop();return}if(parts.some(p=>{const q=pegGrid[p.index];return q.col===(side==='left'?0:6)&&q.row>=2&&q.row<=5})){message('Move bumpers away from this rail mounting lane first.');return}if(wallet-900<MIN_CASH){message('Not enough cash to install a rail.');return}cashChange(-900);rails[side]=true;message('Installed the '+side+' rail!');sound(1020,.13);save();refreshShop()};
 $('upgrade').onclick=()=>{const b=selectedPart();if(!b||b.level>=3)return;const cost=costUpgrade(b);if(wallet-cost<MIN_CASH)return;cashChange(-cost);b.level++;sound(870,.07);save();refreshShop();message('Upgraded to level '+b.level+'. More points and money per hit.')};
 $('sell').onclick=()=>{const b=selectedPart();if(!b)return;const refund=Math.round(types[b.kind].cost*.65+(b.level-1)*types[b.kind].cost*.35);cashChange(refund);parts=parts.filter(p=>p.id!==b.id);selected=null;movingId=null;save();refreshShop();message('Sold bumper for $'+refund+'.')};
 $('move').onclick=()=>{const b=selectedPart();if(!b)return;movingId=b.id;message('Now tap an empty peg to move the selected bumper.');showMenu(false);refreshShop()};
