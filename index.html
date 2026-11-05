@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#071121"><title>G32 · Pinball Tycoon V2</title>
+<meta name="theme-color" content="#071121"><title>G32 · Pinball Tycoon MEGA</title>
 <style>
 :root{color-scheme:dark;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:#050b18;color:#e7f9ff}
 *{box-sizing:border-box}html,body{height:100%;margin:0;overflow:hidden;overscroll-behavior:none}
@@ -29,7 +29,7 @@ h1{font-size:20px;color:#8feeff;letter-spacing:.06em;margin:1px 0 5px}h2{font-si
 .statgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .stat{background:#102a45;border-radius:10px;padding:9px}.stat span{display:block;font-size:10px;color:#9bbad0}.stat strong{font-size:20px}
 .modegrid,.shopgrid,.actiongrid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}
-.modegrid{grid-template-columns:repeat(3,1fr)}
+.modegrid{grid-template-columns:repeat(2,1fr)}
 .btn,.mode,.shop-item{color:#e5faff;border:1px solid #3d759c;border-radius:9px;background:#133451;padding:10px 8px}
 .mode{font-size:11px;min-height:48px}.mode.active,.shop-item.active{border-color:#8affdd;background:#215c65}
 .shopgrid{grid-template-columns:repeat(2,1fr)}
@@ -43,6 +43,13 @@ h1{font-size:20px;color:#8feeff;letter-spacing:.06em;margin:1px 0 5px}h2{font-si
 #touch #left{border-color:#f180c0}#touch #right{border-color:#5bdfff}
 #pulse{position:fixed;z-index:5;bottom:8px;left:50%;transform:translateX(-50%);color:#9fbad5;background:#0b1b30c5;font-size:10px;border:1px solid #224665;padding:6px 10px;border-radius:10px;white-space:nowrap;pointer-events:none}
 .help{font-size:11px;line-height:1.7;color:#bdd1e2;padding-left:18px}
+#context-menu{position:fixed;z-index:25;background:#0d2945ee;border:1px solid #60bfe4;border-radius:10px;min-width:142px;padding:5px;box-shadow:0 12px 35px #000a;backdrop-filter:blur(10px)}
+#context-menu[hidden],#drag-ghost[hidden]{display:none!important}
+#context-menu button{display:block;width:100%;color:#d6f7ff;background:transparent;border:0;padding:9px 10px;text-align:left;border-radius:6px}
+#context-menu button:hover{background:#275272}
+#drag-ghost{position:fixed;z-index:30;pointer-events:none;width:35px;height:35px;border:3px solid #8fe9ff;border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 18px #5be2ff;background:#42acff55}
+#boardbox{transform-origin:center center}
+#plan-slot{color:#daf5ff}
 #mobile-launch{position:fixed;z-index:8;bottom:76px;right:9px;padding:10px 12px;display:none}
 @media(pointer:coarse){#touch{display:flex}#pulse{display:none}#mobile-launch{display:block}}
 @media(max-width:550px){#top-right,#top-left{gap:4px}#wallet,.chip{font-size:11px;padding:9px}#wallet small{display:none}#overlay{top:49px;max-height:calc(100dvh - 55px)}}
@@ -55,26 +62,34 @@ h1{font-size:20px;color:#8feeff;letter-spacing:.06em;margin:1px 0 5px}h2{font-si
 <button id="mobile-launch" class="chip">↻ DROP BALL</button>
 <div id="touch"><button id="left">◀ FLIP</button><button id="right">FLIP ▶</button></div>
 <div id="pulse">A / D: FLIPPERS · B: BUILD · SPACE: EXTRA BALL · M: MENU · F: FULLSCREEN</div>
-<div id="placement-tip" hidden>SNAP BUILD: CHOOSE AN ITEM, THEN CLICK A PEG · CLICK AN OWNED ITEM TO UPGRADE OR SELL</div>
+<div id="placement-tip" hidden>BUILD · DROP BUMPERS ON PEGS · RIGHT CLICK FOR ACTIONS · SHIFT CLICK TO MULTISELECT</div>
+<div id="context-menu" hidden><button id="ctx-up">⬆ Upgrade</button><button id="ctx-move">↔ Move</button><button id="ctx-sell">↩ Sell</button><button id="ctx-info">ℹ Info</button></div>
+<div id="drag-ghost" hidden></div>
 <aside id="overlay" hidden>
- <div class="panel-title"><div><div class="eyebrow">NEXUS ARCADE · G32</div><h1>PINBALL TYCOON V2</h1></div><button id="close" class="close">✕</button></div>
+ <div class="panel-title"><div><div class="eyebrow">NEXUS ARCADE · G32</div><h1>PINBALL TYCOON MEGA</h1></div><button id="close" class="close">✕</button></div>
  <div class="statgrid"><div class="stat"><span>SCORE</span><strong id="score">0</strong></div><div class="stat"><span>BEST</span><strong id="best">0</strong></div><div class="stat"><span>BALLS ACTIVE</span><strong id="active-balls">1</strong></div><div class="stat"><span>ROUND INCOME</span><strong id="income">$0</strong></div></div>
  <div id="message">Earn slowly. Build the table you want.</div>
  <h2>Table style</h2>
- <div class="modegrid"><button class="mode active" data-mode="classic">CLASSIC<br>Gravity ↓</button><button class="mode" data-mode="uloop">GRAVITY U<br>↑ → ↓</button><button class="mode" data-mode="flip">FLIP FIELD<br>Rotating gravity</button></div>
+ <div class="modegrid" id="map-grid"></div><p class="small" id="map-description">Seven completely different physics layouts.</p>
  <h2>Bumper shop — snap to pegs</h2>
- <div class="shopgrid">
- <button class="shop-item active" data-kind="basic"><b>🔵 Basic</b><small>Large, forgiving • $120</small><em>+ $1 per hit</em></button>
- <button class="shop-item" data-kind="power"><b>⚡ Power</b><small>Strong bounce • $280</small><em>+ $2 per hit</em></button>
- <button class="shop-item" data-kind="grab"><b>🧲 Grab & Roll</b><small>Grabs, spins, releases • $650</small><em>+ $3 per hit</em></button>
- <button class="shop-item" data-kind="phase"><b>✧ Ultra Phase</b><small>Tiny, pass through • $1,050</small><em>+ $5 per hit</em></button>
- <button class="shop-item" data-kind="multi"><b>✳ Ball Spawner</b><small>Extra ball on hit • $1,600</small><em>+ $2 per hit</em></button>
- </div>
+ <div class="shopgrid" id="bumper-shop"></div>
+ <h2>Ball lab — choose the next ball</h2>
+ <div class="shopgrid" id="ball-shop"></div>
+ <p class="small" id="ball-help">Special balls have different physics. Your selected ball is used for purchased and spawned balls; the free ball is always available.</p>
  <h2>Rails — two fixed mounting points</h2>
- <div class="actiongrid"><button id="rail-left" class="btn">LEFT RAIL · $900</button><button id="rail-right" class="btn">RIGHT RAIL · $900</button></div>
+ <div class="actiongrid" id="rail-shop"></div><div id="custom-rail-note" class="small">Custom rail: choose the build tool and click two peg sockets to set its entrance and exit.</div>
  <p class="small">A rail captures a well-aimed ball, carries it through glowing pass-through targets, then awards a bonus at the prize button and releases it.</p>
  <div class="statgrid"><div class="stat"><span>OWNED BUMPERS</span><strong id="owned">0 / 26</strong></div><div class="stat"><span>SELECTED</span><strong id="selection">None</strong></div></div>
  <div class="actiongrid" style="margin-top:9px"><button id="upgrade" class="btn" disabled>⬆ UPGRADE</button><button id="sell" class="btn" disabled>↩ SELL</button><button id="move" class="btn" disabled>↔ MOVE FREE</button><button id="play" class="btn primary">▶ PLAY</button></div>
+ <h2>Powered machines — keys 1–8</h2><div class="actiongrid" id="machine-shop"></div>
+ <p class="small">Buy a machine to unlock its hotkey. Some are automatic; others require activation. Costs and cooldowns apply.</p>
+ <h2>Progression &amp; blueprints</h2>
+ <div class="actiongrid"><button class="btn" id="contract">🎯 CLAIM CONTRACT</button><button class="btn" id="research">🔬 RESEARCH</button><button class="btn" id="prestige">✦ PRESTIGE</button><button class="btn" id="efficiency">📊 EFFICIENCY</button></div>
+ <div class="actiongrid" style="margin-top:8px"><button class="btn" id="save-plan">SAVE BLUEPRINT</button><button class="btn" id="load-plan">LOAD BLUEPRINT</button></div>
+ <select id="plan-slot" class="btn" aria-label="Blueprint slot" style="width:100%;margin-top:8px"><option value="0">Blueprint 1</option><option value="1">Blueprint 2</option><option value="2">Blueprint 3</option></select>
+ <p class="small" id="progress">Earn cash, research inventions, complete contracts and unlock the next prestige tier.</p>
+ <h2>Mouse tools</h2><div class="actiongrid"><button class="btn" id="brush">🖌 BRUSH OFF</button><button class="btn" id="trajectory">⌁ PATH PREVIEW OFF</button><button class="btn" id="batch-upgrade">⬆ UPGRADE SELECTED</button><button class="btn" id="batch-sell">↩ SELL SELECTED</button></div>
+ <p class="small">Drag from the shop onto a peg. Right-click a bumper for controls. Mouse wheel zooms; middle-drag pans. Shift-click selects multiple. Brush paints consecutive pegs.</p>
  <h2>Ball controls</h2><div class="actiongrid"><button id="buy-ball" class="btn">+ BALL · $20</button><button id="reset-round" class="btn">↻ RESET ROUND</button><button id="sound" class="btn">♫ SOUND ON</button><button id="clear-layout" class="btn">RESET BUILD</button></div>
  <h2>Rules</h2>
  <ul class="help"><li>At least one ball is always in play. Drained balls respawn automatically.</li><li>Every additional ball costs money, with a maximum of six. If cash gets low, extras disappear until only one remains.</li><li>Earn just $1–$5 from standard bumper hits. Weak rounds incur a small operating cost.</li><li>Your balance never drops below $75. You can sell and upgrade bumpers.</li><li>Flippers rotate smoothly and collide with balls continuously—hold the key/button to keep one raised.</li></ul>
@@ -87,11 +102,64 @@ const W=600,H=840,TAU=Math.PI*2,DT=1/240,R=8,MIN_CASH=75;
 const $=id=>document.getElementById(id);
 const COLORS={blue:'#4be2ff',pink:'#ff6cbb',gold:'#ffdc6d',green:'#75fbc8',purple:'#b58bff'};
 const types={
- basic:{cost:120,r:28,points:1,score:100,bounce:1.13,color:COLORS.blue},
- power:{cost:280,r:22,points:2,score:190,bounce:1.67,color:COLORS.pink},
- grab:{cost:650,r:17,points:3,score:300,bounce:1.0,color:COLORS.purple},
- phase:{cost:1050,r:11,points:5,score:500,bounce:0,color:COLORS.gold},
- multi:{cost:1600,r:15,points:2,score:230,bounce:1.1,color:COLORS.green}
+ basic:{name:'Basic',icon:'●',desc:'Large, reliable bounce',cost:120,r:28,points:1,score:100,bounce:1.13,color:COLORS.blue},
+ power:{name:'Power',icon:'⚡',desc:'Kicks balls harder',cost:280,r:22,points:2,score:190,bounce:1.67,color:COLORS.pink},
+ grab:{name:'Grab & Roll',icon:'↪',desc:'Catch, spin and release sideways',cost:650,r:17,points:3,score:300,bounce:1,color:COLORS.purple},
+ phase:{name:'Ultra Phase',icon:'✧',desc:'Tiny, non-solid bonus',cost:1050,r:11,points:5,score:500,bounce:0,color:COLORS.gold},
+ multi:{name:'Ball Spawner',icon:'✳',desc:'Creates extra balls',cost:1600,r:15,points:2,score:230,bounce:1.1,color:COLORS.green},
+ magnet:{name:'Magnet',icon:'◉',desc:'Attracts nearby balls',cost:450,r:19,points:2,score:200,bounce:1.12,color:'#55dfff'},
+ teleport:{name:'Teleport',icon:'⇄',desc:'Connects to another teleport',cost:1800,r:17,points:4,score:490,bounce:1,color:'#cc9aff'},
+ splitter:{name:'Splitter',icon:'✂',desc:'Duplicates ball (cooldown)',cost:2500,r:16,points:3,score:380,bounce:1.1,color:'#ed8bff'},
+ rotating:{name:'Rotator',icon:'⟳',desc:'Orbiting solid bumper',cost:550,r:15,points:2,score:170,bounce:1.25,color:'#72faeb',sweep:22},
+ freeze:{name:'Freeze',icon:'❄',desc:'Slows the ball briefly',cost:700,r:20,points:2,score:220,bounce:1.02,color:'#91dfff'},
+ multiplier:{name:'Multiplier',icon:'×2',desc:'Doubles income for 6 sec',cost:1200,r:21,points:2,score:290,bounce:1.1,color:'#fff08c'},
+ explosive:{name:'Shockwave',icon:'✹',desc:'Pushes all nearby balls',cost:900,r:18,points:2,score:300,bounce:1.15,color:'#ffa25b'},
+ chain:{name:'Chain Lightning',icon:'ϟ',desc:'Powers nearby bumpers',cost:2000,r:16,points:3,score:390,bounce:1.15,color:'#66e6f8'},
+ conveyor:{name:'Conveyor',icon:'⇀',desc:'Captures, moves sideways',cost:650,r:19,points:2,score:240,bounce:1,color:'#f79ce5'},
+ growing:{name:'Growing',icon:'⬡',desc:'Grows after hits then resets',cost:900,r:14,points:2,score:250,bounce:1.17,color:'#b9ff73'},
+ combo:{name:'Combo',icon:'✦',desc:'Rewards fast repeat hits',cost:1500,r:17,points:3,score:330,bounce:1.1,color:'#ffb884'},
+ gravity:{name:'Gravity Well',icon:'◎',desc:'Creates a miniature gravity field',cost:2200,r:19,points:3,score:430,bounce:1.1,color:'#c49dff'}
+};
+const ballTypes={
+ steel:{name:'Steel',icon:'⚪',cost:0,color:'#ecf9ff',desc:'Balanced default ball',gravity:1,bounce:1,r:8},
+ fire:{name:'Fire',icon:'🔥',cost:35,color:'#ff8e51',desc:'Bonus on quick bumper chains',gravity:1,bounce:1,r:8},
+ ice:{name:'Ice',icon:'❄',cost:35,color:'#9ae5ff',desc:'Slower, easier to control',gravity:.7,bounce:.94,r:8},
+ heavy:{name:'Heavy',icon:'●',cost:45,color:'#8a97b5',desc:'Heavier momentum, falls faster',gravity:1.35,bounce:.82,r:10},
+ plasma:{name:'Plasma',icon:'⚛',cost:95,color:'#d5a4ff',desc:'Charges nearby specials',gravity:1,bounce:1,r:8},
+ super:{name:'Superball',icon:'🟢',cost:40,color:'#87ff7a',desc:'Extra bouncy',gravity:.94,bounce:1.46,r:8},
+ ghost:{name:'Ghost',icon:'◌',cost:90,color:'#93d0ff',desc:'Passes through some barriers',gravity:1,bounce:1,r:8},
+ gold:{name:'Golden',icon:'★',cost:120,color:'#ffe085',desc:'Earns bonus cash on hits',gravity:1,bounce:1.06,r:8}
+};
+const maps={
+ uloop:{title:'MAP01 · Gravity U Deluxe',desc:'The ball rises, sweeps across the roof and drops down through a guided gravity-U. New bumper sockets cover the central field.'},
+ spiral:{title:'MAP02 · Spiral Madness',desc:'A launching spiral guides the ball through a sweeping circular path before releasing it.'},
+ eight:{title:'MAP03 · Infinity Eight',desc:'Two interwoven loops sweep through the middle before the ball enters the playfield.'},
+ hourglass:{title:'MAP04 · Hourglass',desc:'Wide chambers joined by a narrow gate; angled walls funnel the ball through the middle.'},
+ orbital:{title:'MAP05 · Orbital Station',desc:'Gravity curves toward a central gravity well, bending ball trajectories into orbits.'},
+ twins:{title:'MAP06 · Twin Tables',desc:'Two mirrored zones, separate upper flippers and a central gate.'},
+ tower:{title:'MAP07 · Gravity Tower',desc:'A tall obstacle tower with three flipper levels and stage-to-stage passages.'}
+};
+const mapNames=Object.keys(maps);
+const railSpecs={
+ left:{name:'Left Rail',price:900,entry:[71,497]},
+ right:{name:'Right Rail',price:900,entry:[482,497]},
+ top:{name:'Top Loop',price:1150,entry:[94,183]},
+ rescue:{name:'Bottom Rescue',price:1300,entry:[270,767]},
+ spiral:{name:'Spiral Rail',price:1600,entry:[168,417]},
+ cross:{name:'Cross Rail',price:1400,entry:[400,428]},
+ tunnel:{name:'Underground',price:1700,entry:[130,528]},
+ split:{name:'Split Rail',price:1950,entry:[390,560]},
+ custom:{name:'Custom Rail',price:2200,entry:[220,650]}
+};
+const machineSpecs={
+ gravity:{name:'Gravity Switch',price:250,key:'1',desc:'Invert gravity for a short burst'},
+ diverter:{name:'Rail Diverter',price:450,key:'2',desc:'Change split rail exit'},
+ magnet:{name:'Magnet Pulse',price:400,key:'3',desc:'Pull balls toward center'},
+ emergency:{name:'Emergency Flipper',price:850,key:'4',desc:'Extra upper paddle'},
+ jackpot:{name:'Jackpot Button',price:950,key:'5',desc:'Claim charged jackpot'},
+ multiball:{name:'Multiball Trigger',price:1350,key:'6',desc:'Release stored balls'},
+ speed:{name:'Speed Gate',price:650,key:'7',desc:'Boost balls through middle gate'},
+ elevator:{name:'Ball Elevator',price:1500,key:'8',desc:'Move low balls to upper chamber'}
 };
 const pegGrid=[];for(let row=0;row<7;row++)for(let col=0;col<7;col++)pegGrid.push({col,row,x:102+col*63,y:187+row*68,key:col+'-'+row});
 const starter=[{x:228,y:323,r:27,kind:'basic',score:80,points:1},{x:353,y:323,r:25,kind:'power',score:150,points:1}];
@@ -103,6 +171,8 @@ const uPath=[[112,675],[108,540],[108,392],[108,244],[133,164],[225,110],[352,11
 let wallet=280,score=0,best=0,income=0,roundHits=0,mode='classic',isBuild=false,selectedKind='basic',selected=null,
   movingId=null,parts=[],rails={left:false,right:false},idCounter=1,balls=[],tick=0,clock=0,pausedByMenu=false,
   pointerMap=new Map(),particles=[],popups=[],soundOn=true,ctxAudio=null,statsLog=[],railCooldown=0,phaseTimer=0,spawnCooldown=0;
+let chosenBall='steel',mapUnlocks={},railPathsExtra={},customRailPoints=[],customRailPending=false,railDiverter=false,ownedMachines={},machineCooldowns={},activeSwitchUntil=0,magnetPulseUntil=0,incomeMultiplierUntil=0,comboHits=0,comboUntil=0,contractsDone=0,totalHits=0,totalRailTrips=0,researchLevel=0,prestigeLevel=0;
+let blueprints=[null,null,null],selectedIds=new Set(),brushMode=false,previewMode=false,zoom=1,panX=0,panY=0,dragging=null,dragMoved=false,lastMouse=null,drawPath=[],rampCharge=0,shortcutReady=0,scoreByKind={},tempRailSwitch=false;
 let savePending=false;
 const left={x:195,y:734,len:95,rest:.19,up:-.62,a:.19,omega:0,hold:false},right={x:382,y:734,len:95,rest:Math.PI-.19,up:Math.PI+.62,a:Math.PI-.19,omega:0,hold:false};
 const storageKey='nexus-pinball-tycoon-v2';
