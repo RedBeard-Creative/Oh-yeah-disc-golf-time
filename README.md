@@ -37,3 +37,15 @@ The earlier disc golf game remains recoverable through Git history but is no lon
 ## Project Nexus
 
 This is a browser prototype of **G32 Neon Pinball**. The S06 AMOLED watch hardware is a separate project. Adapting the game to that screen would require embedded C++ graphics and more optimization.
+
+## Full-screen mode and floating menu (V4)
+
+The arcade page now removes the permanent sidebar and header so the whole game view is used for pinball.
+
+- Click **☰** at the upper right to open the semi-transparent overlay with score, high score, controls and prize rules. Press **M** to toggle it, or **Esc** to close it.
+- Click **⛶** to request browser fullscreen, or press **F**. If you're using a StackBlitz embedded preview, first click the preview's **open in new tab** icon so the browser can display the game without the IDE.
+- The entire playfield fits within the viewport without cutting off the flippers.
+- On touchscreens, use the small lower-left and lower-right **FLIP** buttons or the corresponding lower sides of the playfield.
+- Keyboard controls remain **Space** to launch, **A/D** or **←/→** for flippers, **N** to nudge and **P** to pause.
+
+The underlying pinball physics and V3 scoring are preserved.
