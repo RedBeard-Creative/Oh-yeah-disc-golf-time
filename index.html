@@ -6,29 +6,71 @@
 <meta name="theme-color" content="#080d1b">
 <title>Neon Pinball — G32</title>
 <style>
-:root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;color:#e9faff;background:#070b17;font-synthesis:none}
-*{box-sizing:border-box}body{margin:0;min-height:100dvh;background:radial-gradient(ellipse 85% 55% at 50% 0%,#182e52 0%,#080e1e 65%,#060916 100%)}
-body::before{content:'';pointer-events:none;position:fixed;inset:0;opacity:.2;background-image:linear-gradient(#22446822 1px,transparent 1px),linear-gradient(90deg,#22446822 1px,transparent 1px);background-size:38px 38px}
-.page{position:relative;max-width:1360px;margin:0 auto;padding:22px 22px 28px}.header{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:15px}.brand{display:flex;align-items:center;gap:13px}.brandmark{background:#152c4b;border:1px solid #357cb0;color:#72dbff;border-radius:12px;width:43px;height:43px;display:grid;place-items:center;font-size:26px;box-shadow:0 0 25px #3996ff27}.eyebrow{font-size:11px;font-weight:800;letter-spacing:.26em;color:#73dcff}.header h1{font-size:clamp(24px,3.4vw,39px);letter-spacing:.08em;line-height:1;margin:4px 0 0;font-weight:900}.header h1 b{color:#ff5cb7}.tagline{font-size:12px;color:#95b2cd;text-align:right}.layout{display:grid;grid-template-columns:minmax(0,790px) minmax(255px,1fr);gap:20px;align-items:start}.board-container{min-width:0}.board-wrap{position:relative;background:linear-gradient(140deg,#344f71,#111e35 28%,#10192d 74%,#37668c);border-radius:23px;padding:9px;box-shadow:0 18px 60px #000a,0 0 40px #28aeff18;max-width:790px;margin:auto;border:1px solid #527092}.game{width:100%;height:auto;display:block;border-radius:15px;touch-action:none;aspect-ratio:600/840;background:#061022}
-.arcade-controls{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:13px}.btn{font-family:inherit;cursor:pointer;color:#ddfaff;border:1px solid #3b80a7;border-radius:12px;background:linear-gradient(160deg,#163454,#0a1c31);padding:14px 10px;font-weight:800;letter-spacing:.035em;user-select:none;-webkit-user-select:none;touch-action:none;transition:background .12s,transform .08s}.btn:active,.btn.down{transform:translateY(2px);background:linear-gradient(160deg,#236c8d,#143d65);box-shadow:0 0 19px #40bfff66}.btn-pink{border-color:#ef63a7;color:#ffc4e3}.btn-cyan{border-color:#4bd6ff;color:#b9f4ff}.control-hint{display:flex;justify-content:space-between;margin-top:5px;font-size:11px;color:#83a7c3}
-.panel{display:flex;flex-direction:column;gap:14px}.card{background:linear-gradient(150deg,#14243cdd,#0c1526e8);border:1px solid #2b4a69;border-radius:17px;padding:17px;box-shadow:0 12px 30px #0004}.card h2{color:#8de7ff;margin:0 0 12px;font-size:12px;letter-spacing:.18em;text-transform:uppercase}.score{font-size:clamp(34px,4vw,52px);letter-spacing:.02em;line-height:1;font-weight:900;font-variant-numeric:tabular-nums}.score small{font-size:14px;color:#a7b8ce;font-weight:600}.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:13px;margin-top:17px}.stat-label{font-size:10px;color:#8ba6c7;letter-spacing:.1em}.stat-val{font-size:20px;font-weight:800;color:#f1fbff;margin-top:3px}.pill{display:inline-block;padding:5px 8px;border:1px solid #2f9c88;border-radius:18px;color:#8af4d0;font-size:10px;font-weight:800;letter-spacing:.07em}.status-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px}.card p{font-size:13px;color:#b9cde0;line-height:1.6;margin:5px 0 8px}.keys{display:inline-block;background:#273a54;color:#d8faff;border:1px solid #4a708e;padding:2px 6px;border-radius:5px;font-size:11px;font-weight:800}.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.actions .btn{font-size:13px;padding:12px 7px}.actions #launch{grid-column:1/-1;padding:17px;background:linear-gradient(120deg,#1e4b66,#16769c);border-color:#5ce1f3}.footer{color:#7396b7;font-size:11px;margin-top:12px;text-align:center}.rules{margin:0;padding-left:19px;font-size:13px;color:#b8cde0;line-height:1.7}.note{font-size:12px!important;color:#82a6c3!important}
-@media(max-width:790px){.layout{grid-template-columns:minmax(0,1fr);gap:15px}.page{max-width:600px;padding:14px}.header{margin-bottom:12px}.tagline{display:none}.board-wrap{max-width:520px}.panel{display:grid;grid-template-columns:1fr 1fr}.card{padding:13px}.score{font-size:32px}.rules{font-size:12px}}
-@media(max-width:470px){.header h1{font-size:24px}.board-wrap{padding:6px;border-radius:18px}.game{border-radius:12px}.panel{grid-template-columns:1fr}.card p{margin:4px 0}.arcade-controls{gap:9px}.btn{padding:13px 8px}.controls .btn{font-size:14px}}
+:root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#edfaff;background:#060a17;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none}
+body{touch-action:manipulation}
+#arcade{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden;background:radial-gradient(ellipse at 50% 45%,#203b64 0%,#0a172e 54%,#060a17 100%)}
+#arcade::before{content:"";position:absolute;inset:-8%;pointer-events:none;background:repeating-linear-gradient(0deg,#52c2f90a 0px,#52c2f90a 1px,transparent 1px,transparent 42px),repeating-linear-gradient(90deg,#52c2f90a 0px,#52c2f90a 1px,transparent 1px,transparent 42px);opacity:.35}
+.board-wrap{position:relative;z-index:1;flex:none;width:min(100vw,71.42857dvh);aspect-ratio:5/7;max-height:100dvh;border:2px solid #3f7198;border-radius:10px;background:#07162a;box-shadow:0 0 35px #25aeff45,0 0 95px #000c;overflow:hidden}
+.game{display:block;width:100%;height:100%;touch-action:none}
+#floating-toolbar{position:fixed;z-index:8;top:max(10px,env(safe-area-inset-top));right:max(10px,env(safe-area-inset-right));display:flex;align-items:center;gap:8px}
+.floating-btn{display:grid;place-items:center;min-width:47px;min-height:47px;padding:7px 12px;background:#081a32c9;border:1px solid #55c6ee;border-radius:13px;color:#b5f3ff;font:800 19px system-ui;cursor:pointer;box-shadow:0 0 22px #248cc955;backdrop-filter:blur(8px);touch-action:manipulation}
+.floating-btn:active{transform:translateY(1px);background:#1d5676}
+#menu-button[aria-expanded="true"]{background:#1f5979;border-color:#98e8ff}
+#overlay-panel{position:fixed;z-index:9;right:max(10px,env(safe-area-inset-right));top:calc(max(10px,env(safe-area-inset-top)) + 57px);width:min(340px,calc(100vw - 20px));max-height:calc(100dvh - 76px);overflow:auto;padding:15px;border-radius:17px;border:1px solid #60c2e2;background:#0b1930d9;box-shadow:0 15px 65px #000b,0 0 28px #2188d033;backdrop-filter:blur(13px);-webkit-backdrop-filter:blur(13px)}
+#overlay-panel[hidden]{display:none!important}
+#overlay-panel h1{font-size:19px;letter-spacing:.13em;margin:0 0 3px;color:#a2edff}
+#overlay-panel .close-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.subtitle{color:#91aec9;font-size:11px;letter-spacing:.15em}
+#overlay-panel h2{font-size:11px;color:#72dfff;letter-spacing:.15em;margin:16px 0 9px}
+.score{font-size:38px;font-weight:900;font-variant-numeric:tabular-nums;line-height:1.1;margin-top:5px}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:11px;margin-top:12px}
+.stat-label{font-size:10px;color:#9bbed8;letter-spacing:.08em}
+.stat-val{font-size:19px;font-weight:800;margin-top:3px}
+.status-row{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+.pill{font-size:10px;color:#97f9da;border:1px solid #2a9781;border-radius:20px;padding:5px 8px;font-weight:800}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btn{font:800 13px system-ui;letter-spacing:.02em;color:#effaff;background:#153655c9;border:1px solid #438cb6;border-radius:10px;padding:13px 7px;cursor:pointer;user-select:none;touch-action:none}
+.btn:active,.btn.down{background:#236e8f}
+.actions #launch{grid-column:1/-1;background:#177294;min-height:45px;border-color:#7ae3fc}
+#overlay-panel p,#overlay-panel li{font-size:12px;line-height:1.55;color:#c2d5e7}
+#overlay-panel ul{padding-left:18px;margin:6px 0}
+.keys{font:800 11px system-ui;padding:1px 4px;background:#2a4663;border-radius:4px;color:#dffbff}
+#panel-close{border:1px solid #41688e;color:#dbf5ff;border-radius:8px;background:#132f4e;width:31px;height:31px;cursor:pointer;font-weight:900}
+#mobile-flips{position:absolute;z-index:3;bottom:2.7%;left:8px;right:8px;display:none;justify-content:space-between;pointer-events:none}
+#mobile-flips .btn{pointer-events:auto;width:83px;min-height:41px;background:#07172d9e;border-color:#3c8baa;border-radius:13px;color:#b6efff}
+#mobile-flips #left{border-color:#f76cb5;color:#ffd1e7}
+#mobile-flips #right{border-color:#4edafa}
+#mini-tip{position:fixed;bottom:max(9px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:4;font-size:11px;color:#b7d9f0;background:#08172cc4;border:1px solid #2f5670;border-radius:12px;padding:6px 11px;pointer-events:none;white-space:nowrap;opacity:.9}
+@media(pointer:coarse){#mobile-flips{display:flex}#mini-tip{display:none}}
+@media(max-width:500px){#overlay-panel{width:min(318px,calc(100vw - 20px))}#floating-toolbar{gap:5px}.floating-btn{min-width:44px;min-height:44px}}
 </style>
 </head>
 <body>
-<main class="page">
-<header class="header"><div class="brand"><div class="brandmark" aria-hidden="true">✦</div><div><div class="eyebrow">NEXUS ARCADE · G32</div><h1>NEON <b>PINBALL</b></h1></div></div><div class="tagline">A bigger arcade table.<br>11 bumpers · jackpots · real flipper gap.</div></header>
-<section class="layout">
-<div class="board-container"><div class="board-wrap"><canvas class="game" id="game" width="720" height="1008" aria-label="Neon Pinball playfield"></canvas></div><div class="arcade-controls"><button id="left" class="btn btn-pink" aria-label="Left flipper">◀ LEFT FLIPPER</button><button id="right" class="btn btn-cyan" aria-label="Right flipper">RIGHT FLIPPER ▶</button></div><div class="control-hint"><span>KEYS: A / ←</span><span>KEYS: D / →</span></div></div>
-<aside class="panel">
-<div class="card"><h2>Current Game</h2><div class="score" id="score">0</div><div class="stats"><div><div class="stat-label">BEST SCORE</div><div class="stat-val" id="best">0</div></div><div><div class="stat-label">BALLS LEFT</div><div class="stat-val" id="balls">3</div></div><div><div class="stat-label">MULTIPLIER</div><div class="stat-val" id="multi">×1</div></div><div><div class="stat-label">TARGETS</div><div class="stat-val" id="targets">0 / 5</div></div></div><div class="status-row"><span class="pill" id="state">READY TO LAUNCH</span><span class="pill" id="nudges">3 NUDGES</span></div></div>
-<div class="card"><h2>Play</h2><div class="actions"><button id="launch" class="btn">● LAUNCH BALL · SPACE</button><button id="new" class="btn">↻ NEW GAME</button><button id="pause" class="btn">Ⅱ PAUSE</button><button id="sound" class="btn">♫ SOUND ON</button><button id="nudge" class="btn">⚡ NUDGE · N</button></div></div>
-<div class="card"><h2>How to play</h2><p>Press <span class="keys">SPACE</span> or Launch. The ball shoots up the right-hand lane and enters the table at the top.</p><p>Hold <span class="keys">A</span> / <span class="keys">D</span> or the arrow keys for the flippers. On touchscreens, tap either lower side of the table.</p><p>Hit 11 glowing bumpers, five purple targets, and four prizes. Hold flipper buttons to keep them raised. There is now a clear drain gap between them.</p></div>
-<div class="card"><h2>Extra challenge</h2><ul class="rules"><li>11 bumpers give 150–300 points each.</li><li>Four prizes: bonus points, multiplier, jackpot and extra ball.</li><li>Collect all four prizes = 5,000 extra points.</li><li>Five purple targets = 2,000-point bank bonus.</li><li>Hit bumpers quickly for combo bonuses.</li><li>Every seven bumper hits upgrades your multiplier.</li></ul><p class="note">Nudge helps free a slow or awkwardly positioned ball. You've got 3 per game.</p></div>
+<div id="arcade">
+  <div class="board-wrap" id="board-wrap">
+    <canvas class="game" id="game" width="720" height="1008" aria-label="Neon Pinball full-screen arcade playfield"></canvas>
+    <div id="mobile-flips"><button id="left" class="btn" aria-label="Hold left flipper">◀ FLIP</button><button id="right" class="btn" aria-label="Hold right flipper">FLIP ▶</button></div>
+  </div>
+</div>
+<div id="floating-toolbar">
+ <button class="floating-btn" id="fullscreen-button" aria-label="Toggle fullscreen" title="Fullscreen">⛶</button>
+ <button class="floating-btn" id="menu-button" aria-label="Show floating game controls" aria-controls="overlay-panel" aria-expanded="false" title="Menu">☰</button>
+</div>
+<div id="mini-tip">SPACE: LAUNCH · A/D: FLIPPERS · M: MENU · F: FULLSCREEN</div>
+<aside id="overlay-panel" hidden aria-label="Floating game information and controls">
+ <div class="close-row"><div><div class="subtitle">NEXUS ARCADE · G32</div><h1>NEON PINBALL</h1></div><button id="panel-close" aria-label="Close menu">✕</button></div>
+ <div class="score" id="score">0</div>
+ <div class="stats"><div><div class="stat-label">BEST SCORE</div><div class="stat-val" id="best">0</div></div><div><div class="stat-label">BALLS LEFT</div><div class="stat-val" id="balls">3</div></div><div><div class="stat-label">MULTIPLIER</div><div class="stat-val" id="multi">×1</div></div><div><div class="stat-label">TARGETS</div><div class="stat-val" id="targets">0 / 5</div></div></div>
+ <div class="status-row"><span class="pill" id="state">READY TO LAUNCH</span><span class="pill" id="nudges">3 NUDGES</span></div>
+ <h2>GAME CONTROLS</h2>
+ <div class="actions"><button id="launch" class="btn">● LAUNCH · SPACE</button><button id="new" class="btn">↻ NEW GAME</button><button id="pause" class="btn">Ⅱ PAUSE</button><button id="sound" class="btn">♫ SOUND ON</button><button id="nudge" class="btn">⚡ NUDGE · N</button></div>
+ <h2>HOW TO PLAY</h2>
+ <p><span class="keys">SPACE</span> launches. Hold <span class="keys">A</span> and <span class="keys">D</span> or arrow keys for constant flipper pressure. On touchscreens, use the bottom of the table or the two transparent flip buttons.</p>
+ <h2>PRIZES</h2>
+ <ul><li>11 glowing bumpers and 5 purple targets.</li><li>Four prizes: points, jackpot, extra ball and multiplier.</li><li>Collect four prizes for a 5,000 point bonus.</li><li>Three quick hits earn combo bonuses.</li><li>The open gap between flippers drains missed balls.</li></ul>
 </aside>
-</section><div class="footer">Offline-ready • Keyboard, mouse and touchscreen • Browser prototype of Game G32</div>
-</main>
 <script>
 'use strict';
 (()=>{
@@ -89,6 +131,16 @@ $('launch').addEventListener('click',launch);$('new').addEventListener('click',r
 window.addEventListener('keydown',e=>{if(['Space','ArrowLeft','ArrowRight','KeyA','KeyD','KeyN','KeyP'].includes(e.code))e.preventDefault();if(e.repeat)return;if(e.code==='Space')launch();if(['ArrowLeft','KeyA'].includes(e.code))flip('left',true);if(['ArrowRight','KeyD'].includes(e.code))flip('right',true);if(e.code==='KeyN')nudge();if(e.code==='KeyP'){$('pause').click()}});
 window.addEventListener('keyup',e=>{if(['ArrowLeft','KeyA'].includes(e.code))flip('left',false);if(['ArrowRight','KeyD'].includes(e.code))flip('right',false)});
 window.addEventListener('blur',()=>{flip('left',false);flip('right',false)});
+
+const overlay=$('overlay-panel'),menuButton=$('menu-button');
+function setMenu(open){overlay.hidden=!open;menuButton.setAttribute('aria-expanded',String(open));menuButton.setAttribute('aria-label',open?'Hide floating game controls':'Show floating game controls');}
+menuButton.addEventListener('click',()=>setMenu(overlay.hidden));
+$('panel-close').addEventListener('click',()=>setMenu(false));
+document.addEventListener('pointerdown',e=>{if(!overlay.hidden&&!overlay.contains(e.target)&&!menuButton.contains(e.target))setMenu(false)});
+$('fullscreen-button').addEventListener('click',async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen()}catch(e){$('fullscreen-button').title='Open the preview in a new browser tab to use fullscreen'}});
+document.addEventListener('fullscreenchange',()=>$('fullscreen-button').textContent=document.fullscreenElement?'⤢':'⛶');
+window.addEventListener('keydown',e=>{if(e.code==='Escape')setMenu(false);if(e.code==='KeyM'&&!e.repeat){e.preventDefault();setMenu(overlay.hidden)}if(e.code==='KeyF'&&!e.repeat&&e.target.tagName!=='INPUT'){$('fullscreen-button').click()}});
+
 canvas.addEventListener('pointerdown',e=>{e.preventDefault();canvas.setPointerCapture(e.pointerId);const bounds=canvas.getBoundingClientRect(),x=(e.clientX-bounds.left)*W/bounds.width,y=(e.clientY-bounds.top)*H/bounds.height;if(phase!=='playing'){launch();return}if(y>410){const side=x<W/2?'left':'right';pointerFlips.set(e.pointerId,side);flip(side,true)}});
 for(const eventName of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(eventName,e=>{const side=pointerFlips.get(e.pointerId);pointerFlips.delete(e.pointerId);if(side)flip(side,[...pointerFlips.values()].includes(side))});
 function segment(ax,ay,bx,by,boost=1.0,onCollision=null){
