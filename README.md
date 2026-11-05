@@ -1,33 +1,23 @@
-# Oh Yeah Disc Golf Time! — HTML Edition 🥏
+# G32 Neon Pinball — Nexus Arcade
 
-The Disc Golf Wheel of Doom is now a **plain HTML + CSS + JavaScript** game. No React, no complex build setup needed.
+A standalone, full-size, browser-based arcade pinball game. Built with HTML, CSS and JavaScript Canvas and no external dependencies.
 
-## Edit in VS Code
-1. Clone or download this GitHub repository.
-2. Open the folder in Visual Studio Code.
-3. Install the **Live Server** extension (or use any simple local web server).
-4. Right-click `index.html` and select **Open with Live Server**.
+## Play
 
-The source files are:
-- `index.html` — Page layout
-- `style.css` — Visual styling
-- `app.js` — Wheel animation, randomness, players, match logic
-- `src/challenges.js` — All 61 challenges and the SAFE spots
+Open this repository in [StackBlitz](https://stackblitz.com/github/RedBeard-Creative/Oh-yeah-disc-golf-time) or open `index.html` directly in your browser.
 
-## StackBlitz
-[Open this repository in StackBlitz](https://stackblitz.com/~/github.com/RedBeard-Creative/Oh-yeah-disc-golf-time)
+- **Space** — launch the ball through the right-hand chute
+- **A / Left arrow** — hold left flipper
+- **D / Right arrow** — hold right flipper
+- **N** — nudge a ball (3 nudges per game)
+- **P** — pause
+- On touchscreens, tap either lower half of the playfield for the corresponding flipper.
+- Restart, mute, and launch buttons are shown beside the table.
 
-You can also run `npm install` then `npm run dev` in VS Code or StackBlitz. Only Vite is needed for development; no React dependency.
+Includes 3-ball games, colorful bumpers, bonus target banks, multipliers, persistent local high score, and a safe open route from the launcher into play.
 
-## Rules
-- Every player spins before each hole.
-- Wheel of Fate chooses one of four category wheels.
-- Each category wheel has its challenges plus an equally likely SAFE SPOT.
-- A failed risk challenge schedules **two required spins on the next hole only**, never an immediate extra spin.
-- Unanswered risk outcomes are treated as failed on advancing to the next hole.
-- Double Doom and Doom Streak each add two spins on the current hole.
-- No Favorite lasts two holes; Disc Jail lasts three.
-- The game saves players and match progress in browser localStorage. Each phone keeps its own state.
-- Spins use a browser cryptographic random number generator with unbiased sampling when available.
+## Notes
 
-Play safely. Reroll throws that would endanger anyone or cannot be completed on that hole.
+This prototype is a regular pinball game, *not* a smartwatch-sized game. We can adapt it for the Waveshare S06 280×456 AMOLED later.
+
+The previous disc-golf project can still be recovered through the repository's Git history. Older files are not used by the new standalone `index.html`.
