@@ -175,6 +175,10 @@ let chosenBall='steel',mapUnlocks={},railPathsExtra={},customRailPoints=[],custo
 let blueprints=[null,null,null],selectedIds=new Set(),brushMode=false,previewMode=false,zoom=1,panX=0,panY=0,dragging=null,dragMoved=false,lastMouse=null,drawPath=[],rampCharge=0,shortcutReady=0,scoreByKind={},tempRailSwitch=false;
 let savePending=false;
 const left={x:195,y:734,len:95,rest:.19,up:-.62,a:.19,omega:0,hold:false},right={x:382,y:734,len:95,rest:Math.PI-.19,up:Math.PI+.62,a:Math.PI-.19,omega:0,hold:false};
+const upperFlippers=[
+ {x:193,y:530,len:68,rest:.2,up:-.58,a:.2,omega:0,hold:false},
+ {x:380,y:530,len:68,rest:Math.PI-.2,up:Math.PI+.58,a:Math.PI-.2,omega:0,hold:false}
+];
 const storageKey='nexus-pinball-tycoon-v2';
 function save(){try{localStorage.setItem(storageKey,JSON.stringify({
  wallet,score,best,mode,parts:parts.map(b=>({id:b.id,index:b.index,kind:b.kind,level:b.level})),rails,idCounter,
@@ -220,8 +224,20 @@ function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 function cashChange(v){wallet=Math.max(MIN_CASH,Math.floor(wallet+v));savePending=true}
 function notify(t,x,y,c='#baffeb'){popups.push({t,x,y,c,time:1.2});if(popups.length>40)popups.shift()}
 function spark(x,y,c){for(let i=0;i<9;i++){const a=Math.random()*TAU,sp=50+Math.random()*200;particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,t:.3+Math.random()*.25,c})}}
-function addPoints(points,earn,x,y,c=COLORS.blue){score+=points;best=Math.max(score,best);if(earn){cashChange(earn);income+=earn;roundHits++}notify('+'+points+(earn?' / $'+earn:''),x,y,c);spark(x,y,c);savePending=true}
-function emptyBall(){return {x:0,y:0,vx:0,vy:0,r:R,modePath:null,rail:false,catchUntil:0,cooldown:0,hits:0,earned:0}}
+function addPoints(points,earn,x,y,c=COLORS.blue,kind=null,b=null){
+ const rawEarn=earn;
+ if(incomeMultiplierUntil>clock)earn*=2;
+ if(b?.type==='gold'&&earn)earn+=1;
+ if(b?.type==='fire'&&earn){if(clock-b.chainAt<2){b.chainCount++;if(b.chainCount>=3){earn+=2;b.chainCount=0;notify('FIRE COMBO +$2',x,y-24,'#ffa264')}}else b.chainCount=1;b.chainAt=clock}
+ score+=points;best=Math.max(score,best);
+ if(earn){cashChange(earn);income+=earn;roundHits++;totalHits++}
+ if(kind){scoreByKind[kind]??={hits:0,cash:0};scoreByKind[kind].hits++;scoreByKind[kind].cash+=earn}
+ notify('+'+points+(earn?' / $'+earn:''),x,y,c);spark(x,y,c);savePending=true;
+ }
+function emptyBall(kind='steel'){
+ const cfg=ballTypes[kind]||ballTypes.steel;
+ return {x:0,y:0,vx:0,vy:0,r:cfg.r,type:kind,modePath:null,rail:false,catchUntil:0,cooldown:0,hits:0,earned:0,chainAt:0,chainCount:0,lastPlasmaAt:0,teleportUntil:0}
+}
 function pathSegments(points){const distances=[],total=points.reduce((sum,p,i)=>{if(i){const q=points[i-1],v=Math.hypot(p[0]-q[0],p[1]-q[1]);distances.push(v);return sum+v}return sum},0);return {points,distances,total}}
 const uRail=pathSegments(uPath),leftRail=pathSegments(railPaths.left),rightRail=pathSegments(railPaths.right);
 
@@ -247,36 +263,90 @@ function railPathFor(side){
 
 function posOn(path,d){let leftDist=d;for(let i=0;i<path.distances.length;i++){const len=path.distances[i];if(leftDist<=len||i===path.distances.length-1){const a=path.points[i],b=path.points[i+1],t=clamp(leftDist/len,0,1),dx=(b[0]-a[0])/len,dy=(b[1]-a[1])/len;return {x:a[0]+(b[0]-a[0])*t,y:a[1]+(b[1]-a[1])*t,dx,dy,segment:i}}leftDist-=len}return {x:0,y:0,dx:0,dy:1,segment:0}}
 function attach(b,path,kind,side){b.modePath={path,at:0,kind,side,speed:kind==='u'?530:610};let p=posOn(path,0);b.x=p.x;b.y=p.y;b.vx=0;b.vy=0}
-function spawn(initial=false){const b=emptyBall();if(mode==='uloop'){attach(b,uRail,'u','left')}else if(mode==='spiral'){attach(b,spiralPath,'u','left')}else if(mode==='eight'){attach(b,eightPath,'u','left')}else{b.x=initial?128:170+Math.random()*230;b.y=142;b.vx=(Math.random()-.5)*240;b.vy=115}balls.push(b);return b}
+function spawn(initial=false,kind='steel'){const b=emptyBall(kind);if(mode==='uloop'){attach(b,uRail,'u','left')}else if(mode==='spiral'){attach(b,spiralPath,'u','left')}else if(mode==='eight'){attach(b,eightPath,'u','left')}else{b.x=initial?128:170+Math.random()*230;b.y=142;b.vx=(Math.random()-.5)*240;b.vy=115}balls.push(b);return b}
 function ensureBall(){if(balls.length===0)spawn(true)}
-function dropBall(extra=false){if(extra){if(balls.length>=6){message('Six balls is the maximum.');return false}const cost=20+10*(balls.length-1);if(wallet-cost<MIN_CASH){message('Keep the $75 safety reserve. Score more to add a ball!');return false}cashChange(-cost)}spawn(false);refreshShop();return true}
+function dropBall(extra=false){
+ if(balls.length>=6){message('Six balls at once is the maximum.');return false}
+ const cfg=ballTypes[chosenBall]||ballTypes.steel;
+ if(extra){
+  const cost=20+10*(balls.length-1)+cfg.cost;
+  if(wallet-cost<MIN_CASH){message('Need $'+cost+' for '+cfg.name+' ball; your protected $75 stays untouched.');return false}
+  cashChange(-cost);
+ }
+ spawn(false,extra?chosenBall:'steel');refreshShop();return true;
+}
 function setback(){const upkeep=Math.max(2,Math.ceil(parts.reduce((v,p)=>v+types[p.kind].cost,0)/700)+(rails.left?2:0)+(rails.right?2:0));if(income<upkeep){const fee=Math.min(18,Math.max(1,upkeep-income));cashChange(-fee);notify('-$'+fee+' upkeep',295,462,COLORS.pink);if(balls.length>1){balls.pop();notify('LOST EXTRA BALL',310,500,COLORS.pink)}}else if(income>upkeep*4){notify('PROFIT ROUND!',300,430,COLORS.green)}income=0;roundHits=0;savePending=true;reduceExtras()}
 function reduceExtras(){if(wallet<=100&&balls.length>1){balls=balls.slice(0,1);message('Low funds: extra balls removed, but your free ball stays.')}ensureBall()}
 function removeBall(index){balls.splice(index,1);setback();ensureBall();refreshShop()}
 function floorRay(){return mode==='flip'?Math.sin(phaseTimer*.28):0}
-function gravity(b){if(mode==='flip'){const a=phaseTimer*.24;return {x:Math.sin(a)*730,y:Math.cos(a)*730}}return {x:0,y:910}}
+function gravity(b){
+ if(mode==='orbital'){const dx=284-b.x,dy=369-b.y,d=Math.max(45,Math.hypot(dx,dy)),strength=690;return {x:dx/d*strength+Math.sin(phaseTimer*.23)*90,y:dy/d*strength+Math.cos(phaseTimer*.23)*80}}
+ if(activeSwitchUntil>clock)return {x:0,y:-850};
+ return {x:0,y:910};
+}
 function updateFlippers(dt){for(const f of [left,right]){const target=f.hold?f.up:f.rest;const delta=clamp(target-f.a,-11.5*dt,11.5*dt);f.a+=delta;f.omega=delta/dt}}
-function resolveCircle(b,x,y,r,bounce){const dx=b.x-x,dy=b.y-y,d=Math.hypot(dx,dy),lim=b.r+r;if(d>=lim)return false;const nx=dx/(d||1),ny=dy/(d||1);b.x=x+nx*(lim+.25);b.y=y+ny*(lim+.25);const dot=b.vx*nx+b.vy*ny;if(dot<0){b.vx-=(1+bounce)*dot*nx;b.vy-=(1+bounce)*dot*ny}return true}
-function hitBumper(b,o,x,y){const t=types[o.kind],radius=t.r;
- if(o.cooldown>clock)return;
+function resolveCircle(b,x,y,r,bounce){const cfg=ballTypes[b.type]||ballTypes.steel;bounce*=cfg.bounce;const dx=b.x-x,dy=b.y-y,d=Math.hypot(dx,dy),lim=b.r+r;if(d>=lim)return false;const nx=dx/(d||1),ny=dy/(d||1);b.x=x+nx*(lim+.25);b.y=y+ny*(lim+.25);const dot=b.vx*nx+b.vy*ny;if(dot<0){b.vx-=(1+bounce)*dot*nx;b.vy-=(1+bounce)*dot*ny}return true}
+function hitBumper(b,o,x,y){
+ const t=types[o.kind],radius=t.r+(o.kind==='growing'?(o.grow||0)*6:0);
+ if(o.kind==='rotating'){const a=clock*2.2+o.id*.23;x+=Math.cos(a)*t.sweep;y+=Math.sin(a)*t.sweep}
+ if(o.cooldown>clock&&o.kind!=='phase')return;
+ const d=Math.hypot(b.x-x,b.y-y);
  if(o.kind==='phase'){
-  if(Math.hypot(b.x-x,b.y-y)<radius+b.r){o.cooldown=clock+.18;addPoints(t.score*o.level,t.points*o.level,x,y,t.color);sound(900,.035)}
-  return;
+  if(d<radius+b.r&&o.cooldown<=clock){o.cooldown=clock+.25;addPoints(t.score*o.level,t.points*o.level,x,y,t.color,o.kind,b);sound(880,.05)}
+  return
  }
- if(o.kind==='grab'&&Math.hypot(b.x-x,b.y-y)<radius+b.r){o.cooldown=clock+.55;
-  addPoints(t.score*o.level,t.points*o.level,x,y,t.color);
-  b.catchUntil=clock+.28;b.x=x;b.y=y;b.vx=0;b.vy=0;b.grabSide=b.x<300?1:-1;b.grabOriginX=x;b.grabOriginY=y;sound(450,.11);return}
- if(resolveCircle(b,x,y,radius,t.bounce)){if(o.cooldown>clock)return;o.cooldown=clock+.14;
-  addPoints(t.score*o.level,t.points*o.level,x,y,t.color);
-  if(o.kind==='multi'&&balls.length<6&&spawnCooldown<clock&&wallet>95){spawnCooldown=clock+.9;spawn();notify('MULTIBALL!',x,y-20,COLORS.green)}
-  sound(o.kind==='power'?720:470,.045)
+ if(o.kind==='teleport'&&d<radius+b.r&&o.cooldown<=clock){
+  const partner=parts.find(p=>p.id!==o.id&&p.kind==='teleport');
+  if(partner&&b.teleportUntil<clock){
+   const target=pegGrid[partner.index];b.x=clamp(target.x+34,80,483);b.y=clamp(target.y-25,170,640);
+   b.vx=300*(x>300?-1:1);b.vy=-300;b.teleportUntil=clock+.8;
+   partner.cooldown=clock+.8;o.cooldown=clock+.8;
+   addPoints(490*o.level,t.points*o.level,x,y,t.color,o.kind,b);sound(1120,.13);return
+  }
+ }
+ if(['grab','conveyor'].includes(o.kind)&&d<radius+b.r&&o.cooldown<=clock){
+  o.cooldown=clock+.55;addPoints(t.score*o.level,t.points*o.level,x,y,t.color,o.kind,b);
+  b.catchUntil=clock+.28;b.grabOriginX=x;b.grabOriginY=y;b.grabSide=x<300?1:-1;
+  b.x=x;b.y=y;b.vx=0;b.vy=0;sound(480,.08);return
+ }
+ if(resolveCircle(b,x,y,radius,t.bounce)){
+  if(o.cooldown>clock)return;
+  o.cooldown=clock+.16;
+  addPoints(t.score*o.level,t.points*o.level,x,y,t.color,o.kind,b);
+  if(o.kind==='freeze'){b.vx*=.25;b.vy*=.25;notify('FROZEN',x,y-22,t.color)}
+  if(o.kind==='multiplier'){incomeMultiplierUntil=clock+6;notify('2× INCOME · 6 SEC',x,y-26,t.color)}
+  if(o.kind==='growing'){o.grow=((o.grow||0)+1)%4;notify('GROW '+(o.grow+1),x,y-20,t.color)}
+  if(o.kind==='combo'){if(clock-comboUntil<1.8){cashChange(3);income+=3;notify('COMBO +$3',x,y-22,t.color)}comboUntil=clock}
+  if(o.kind==='explosive'){
+   for(const target of balls){const dx=target.x-x,dy=target.y-y,dd=Math.max(8,Math.hypot(dx,dy));
+    if(dd<160){target.vx+=dx/dd*480;target.vy+=dy/dd*480}
+   }notify('SHOCKWAVE',x,y-24,t.color)
+  }
+  if(o.kind==='chain'){const close=parts.filter(p=>p.id!==o.id&&Math.hypot(pegGrid[p.index].x-x,pegGrid[p.index].y-y)<155).slice(0,4);for(const p of close){const q=pegGrid[p.index];addPoints(75,1,q.x,q.y,types[p.kind].color,p.kind,b)}}
+  if(['multi','splitter'].includes(o.kind)&&balls.length<6&&spawnCooldown<clock&&wallet>95){
+   spawnCooldown=clock+(o.kind==='splitter'?1.8:1.0);const nb=spawn(false,b.type);nb.x=b.x+21;nb.y=b.y-19;nb.vx=-b.vx*.75;nb.vy=-Math.abs(b.vy)*.8-120;notify(o.kind==='multi'?'MULTIBALL!':'SPLIT!',x,y-25,t.color)
+  }
+  if(o.kind==='power'){b.vx*=1.08;b.vy*=1.08}
+  sound(o.kind==='power'?760:470,.045)
  }
 }
-function wallBall(b){if(b.x<57){b.x=57;if(b.vx<0)b.vx=-b.vx*.82}if(b.x>511){b.x=511;if(b.vx>0)b.vx=-b.vx*.82}if(b.y<97){b.y=97;if(b.vy<0)b.vy=-b.vy*.82}
+function wallBall(b){if(b.type==='ghost'&&b.x<57){b.x=485;b.vx=Math.abs(b.vx)*.86;return}if(b.type==='ghost'&&b.x>511){b.x=82;b.vx=-Math.abs(b.vx)*.86;return}if(b.x<57){b.x=57;if(b.vx<0)b.vx=-b.vx*.82}if(b.x>511){b.x=511;if(b.vx>0)b.vx=-b.vx*.82}if(b.y<97){b.y=97;if(b.vy<0)b.vy=-b.vy*.82}
  // Pegs are attachment holes, not physical obstacles unless occupied.
  // Two triangular guides lead the ball toward flippers.
+ if(b.type!=='ghost'){
  segmentBall(b,61,655,159,700,6,.9);
  segmentBall(b,506,655,410,700,6,.9)
+ }
+ if(mode==='hourglass'){
+  segmentBall(b,58,365,228,425,10,.8);segmentBall(b,342,425,507,365,10,.8);
+ }
+ if(mode==='twins'){
+  segmentBall(b,285,152,285,347,7,.84);segmentBall(b,285,422,285,670,7,.84);
+ }if(mode==='tower'){
+  segmentBall(b,57,306,379,306,6,.8);
+  segmentBall(b,199,490,509,490,6,.8);
+ }
+ 
 }
 function segmentBall(b,x1,y1,x2,y2,r,restitution){const dx=x2-x1,dy=y2-y1,n=dx*dx+dy*dy,t=clamp(((b.x-x1)*dx+(b.y-y1)*dy)/n,0,1),cx=x1+t*dx,cy=y1+t*dy,ox=b.x-cx,oy=b.y-cy,d=Math.hypot(ox,oy),limit=b.r+r;
  if(d>=limit)return false;const nx=ox/(d||1),ny=oy/(d||1);b.x=cx+nx*(limit+.2);b.y=cy+ny*(limit+.2);const towards=b.vx*nx+b.vy*ny;if(towards<0){b.vx-=(1+restitution)*towards*nx;b.vy-=(1+restitution)*towards*ny}return true}
@@ -308,13 +378,30 @@ function advanceBall(b,dt){
  if(b.modePath){advancePath(b,dt);return}
  if(b.catchUntil>clock){b.x=b.grabOriginX+Math.sin((b.catchUntil-clock)*31)*13;b.y=b.grabOriginY;return}
  if(b.catchUntil&&b.catchUntil<=clock){b.catchUntil=0;b.vx=(b.grabSide||1)*540;b.vy=-490}
- const force=gravity(b);b.vx+=force.x*dt;b.vy+=force.y*dt;
- const speed=Math.hypot(b.vx,b.vy),top=970;if(speed>top){b.vx*=top/speed;b.vy*=top/speed}
+ const force=gravity(b),ballCfg=ballTypes[b.type]||ballTypes.steel;
+ b.vx+=force.x*dt*ballCfg.gravity;b.vy+=force.y*dt*ballCfg.gravity;
+ for(const o of parts){
+  if(o.kind!=='magnet'&&o.kind!=='gravity')continue;
+  const q=pegGrid[o.index],dx=q.x-b.x,dy=q.y-b.y,dist=Math.hypot(dx,dy);
+  if(dist>12&&dist<150){
+   const power=(o.kind==='magnet'?520:740)*Math.pow(1-dist/150,1.2)*o.level;
+   b.vx+=(dx/dist)*power*dt;b.vy+=(dy/dist)*power*dt;
+  }
+ }
+ if(magnetPulseUntil>clock){const dx=285-b.x,dy=360-b.y,d=Math.max(20,Math.hypot(dx,dy));b.vx+=dx/d*1150*dt;b.vy+=dy/d*1150*dt}
+ if(b.type==='ice'){b.vx*=.999;b.vy*=.999}
+ if(b.type==='plasma'&&clock-b.lastPlasmaAt>.75){const nearby=parts.find(o=>{const p=pegGrid[o.index];return Math.hypot(p.x-b.x,p.y-b.y)<70&&['phase','multi','chain','multiplier','gravity'].includes(o.kind)});if(nearby){b.lastPlasmaAt=clock;const p=pegGrid[nearby.index];addPoints(90,1,p.x,p.y,COLORS.purple);sound(950,.04)}}
+ 
+ const speed=Math.hypot(b.vx,b.vy),top=b.type==='heavy'?1130:970;if(speed>top){b.vx*=top/speed;b.vy*=top/speed}
  b.x+=b.vx*dt;b.y+=b.vy*dt;
  wallBall(b);
  for(const fixed of starter){if(resolveCircle(b,fixed.x,fixed.y,fixed.r,1.23)){if(!fixed.cooldown||fixed.cooldown<clock){fixed.cooldown=clock+.15;addPoints(fixed.score,fixed.points,fixed.x,fixed.y,COLORS.blue);sound(560,.03)}}}
  for(const o of parts){const p=pegGrid[o.index];hitBumper(b,o,p.x,p.y)}
  flipperBall(b,left);flipperBall(b,right);
+ if(mode==='tower'||mode==='twins'||ownedMachines.emergency)for(const f of upperFlippers)flipperBall(b,f);
+ if(ownedMachines.speed&&Math.abs(b.y-295)<9&&Math.abs(b.x-291)<32&&clock>b.speedUntil){
+  b.vy-=330;b.speedUntil=clock+.45;notify('SPEED BOOST',b.x,b.y,COLORS.green)
+ }
  tryRail(b)
 }
 function canBuild(index,kind,ignoreId=null){const p=pegGrid[index],t=types[kind];if(!p||!t)return false;
@@ -418,7 +505,8 @@ function render(){
 }
 function step(dt){
  clock+=dt;tick++;phaseTimer+=dt;
- for(const f of [left,right])updateFlippersOne(f,dt);
+ for(const f of [...[left,right],...upperFlippers])updateFlippersOne(f,dt);
+ for(const f of upperFlippers)f.hold=(f===upperFlippers[0]?left.hold:right.hold);
  if(!isBuild){for(let i=balls.length-1;i>=0;i--){const b=balls[i];advanceBall(b,dt);if(b.y>866){removeBall(i)}}reduceExtras()}
  for(const p of popups)p.y-=24*dt;popups=popups.filter(p=>(p.time-=dt)>0);for(const p of particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=240*dt}particles=particles.filter(p=>(p.t-=dt)>0)
 }
