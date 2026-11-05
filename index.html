@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#080d1b">
-<title>Neon Pinball — G32</title>
+<title>G32 Neon Pinball Tycoon</title>
 <style>
 :root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#edfaff;background:#060a17;color-scheme:dark}
 *{box-sizing:border-box}
@@ -45,6 +45,28 @@ body{touch-action:manipulation}
 #mini-tip{position:fixed;bottom:max(9px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:4;font-size:11px;color:#b7d9f0;background:#08172cc4;border:1px solid #2f5670;border-radius:12px;padding:6px 11px;pointer-events:none;white-space:nowrap;opacity:.9}
 @media(pointer:coarse){#mobile-flips{display:flex}#mini-tip{display:none}}
 @media(max-width:500px){#overlay-panel{width:min(318px,calc(100vw - 20px))}#floating-toolbar{gap:5px}.floating-btn{min-width:44px;min-height:44px}}
+
+/* Pinball Tycoon: builder, money display, and floating shop */
+#floating-toolbar{gap:7px}
+#build-button{font-size:13px;min-width:90px;padding:7px 11px}
+#build-button.active{background:#155c70;border-color:#95ffdb;color:#dcfff2;box-shadow:0 0 20px #33e8b077}
+#cash-hud{position:fixed;z-index:5;top:max(10px,env(safe-area-inset-top));left:max(10px,env(safe-area-inset-left));font-weight:900;font-size:14px;color:#a6ffdc;background:#081b30cb;border:1px solid #43ac93;border-radius:11px;padding:10px 13px;backdrop-filter:blur(8px)}
+#hud-mode{font-size:10px;color:#9ed8ef;letter-spacing:.12em;margin-left:6px}
+#build-hint{position:fixed;z-index:6;bottom:12px;left:50%;transform:translateX(-50%);max-width:90vw;width:max-content;padding:9px 12px;border:1px solid #60bcd9;background:#092844ee;color:#caf8ff;font-size:11px;font-weight:800;text-align:center;border-radius:10px;pointer-events:none}
+#build-hint[hidden]{display:none!important}
+#tycoon-shop{margin:12px 0;border:1px solid #286788;background:#0e2a4652;padding:11px;border-radius:12px}
+.shop-summary{display:grid;grid-template-columns:1fr 1fr;gap:9px;color:#9fc7de;font-size:10px}
+.shop-summary>div{background:#112947;padding:8px;border-radius:8px}
+.shop-summary strong{display:block;color:#9effdd;font-size:20px}
+#overlay-panel .shop-caption{color:#b0cddd;font-size:11px;margin:9px 0}
+.bumper-catalog{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:10px 0}
+.shop-item{display:flex;min-height:75px;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:7px 3px;background:#10263f;color:#dff6ff;border:1px solid #496c88;border-radius:9px;cursor:pointer;touch-action:manipulation}
+.shop-item.active{outline:2px solid #6fe9fb;background:#19415b}
+.shop-orb{font-size:20px;filter:drop-shadow(0 0 5px currentColor)}.shop-orb.basic{color:#57dbff}.shop-orb.power{color:#ff6cc6}.shop-orb.gold{color:#ffe16e}
+.shop-item b{font-size:12px}.shop-item small{font-size:9px;color:#9cbed6}
+.shop-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}.shop-actions .btn{font-size:11px;padding:9px 4px}.shop-actions .btn:disabled{opacity:.3;cursor:not-allowed}
+.shop-done{display:block;width:100%;margin-top:9px;border-color:#58d9b5;background:#1a5a4a}
+@media(max-width:550px){#cash-hud{top:8px;left:8px;font-size:12px;padding:7px 9px}#floating-toolbar{top:8px;right:8px;gap:5px}#build-button{min-width:67px;font-size:11px;padding:7px 8px}#build-hint{font-size:9px}#overlay-panel{max-height:calc(100dvh - 68px);width:min(350px,calc(100vw - 20px))}}
 </style>
 </head>
 <body>
@@ -56,20 +78,36 @@ body{touch-action:manipulation}
 </div>
 <div id="floating-toolbar">
  <button class="floating-btn" id="fullscreen-button" aria-label="Toggle fullscreen" title="Fullscreen">⛶</button>
+ <button class="floating-btn" id="build-button" aria-label="Toggle build mode" title="Build your own bumpers">🛠 BUILD</button>
  <button class="floating-btn" id="menu-button" aria-label="Show floating game controls" aria-controls="overlay-panel" aria-expanded="false" title="Menu">☰</button>
 </div>
-<div id="mini-tip">SPACE: LAUNCH · A/D: FLIPPERS · M: MENU · F: FULLSCREEN</div>
+<div id="cash-hud">💰 <span id="hud-cash">$1,500</span> <span id="hud-mode">PLAY</span></div>
+<div id="build-hint" hidden>🛠 BUILD MODE — SELECT A BUMPER IN THE MENU, THEN TAP THE TABLE</div>
+<div id="mini-tip">SPACE: LAUNCH · A/D: FLIPPERS · B: BUILD · M: MENU · F: FULLSCREEN</div>
 <aside id="overlay-panel" hidden aria-label="Floating game information and controls">
- <div class="close-row"><div><div class="subtitle">NEXUS ARCADE · G32</div><h1>NEON PINBALL</h1></div><button id="panel-close" aria-label="Close menu">✕</button></div>
+ <div class="close-row"><div><div class="subtitle">NEXUS ARCADE · G32</div><h1>PINBALL TYCOON</h1></div><button id="panel-close" aria-label="Close menu">✕</button></div>
  <div class="score" id="score">0</div>
  <div class="stats"><div><div class="stat-label">BEST SCORE</div><div class="stat-val" id="best">0</div></div><div><div class="stat-label">BALLS LEFT</div><div class="stat-val" id="balls">3</div></div><div><div class="stat-label">MULTIPLIER</div><div class="stat-val" id="multi">×1</div></div><div><div class="stat-label">TARGETS</div><div class="stat-val" id="targets">0 / 5</div></div></div>
  <div class="status-row"><span class="pill" id="state">READY TO LAUNCH</span><span class="pill" id="nudges">3 NUDGES</span></div>
- <h2>GAME CONTROLS</h2>
+ <section id="tycoon-shop">
+<h2>🛠 BUILD YOUR OWN TABLE</h2>
+<div class="shop-summary"><div>CASH<strong id="shop-cash">$1,500</strong></div><div>BUMPERS<strong id="shop-count">0 / 20</strong></div></div>
+<p class="shop-caption">Earn cash from scores. Pick a bumper, then tap an open spot. Your layout saves automatically.</p>
+<div class="bumper-catalog">
+<button class="shop-item active" data-kind="basic"><span class="shop-orb basic">●</span><b>Classic</b><small>$350 · 150 pts</small></button>
+<button class="shop-item" data-kind="power"><span class="shop-orb power">⚡</span><b>Power</b><small>$750 · 350 pts</small></button>
+<button class="shop-item" data-kind="gold"><span class="shop-orb gold">★</span><b>Gold</b><small>$1,500 · 800 pts</small></button>
+</div>
+<p class="shop-caption" id="tycoon-message" role="status">Tap BUILD, choose a bumper, then tap the table to place it.</p>
+<div class="shop-actions"><button class="btn" id="upgrade-bumper" disabled>⬆ Upgrade selected</button><button class="btn" id="sell-bumper" disabled>↩ Sell selected</button></div>
+<button class="btn shop-done" id="done-building">▶ DONE BUILDING / PLAY</button>
+</section>
+<h2>GAME CONTROLS</h2>
  <div class="actions"><button id="launch" class="btn">● LAUNCH · SPACE</button><button id="new" class="btn">↻ NEW GAME</button><button id="pause" class="btn">Ⅱ PAUSE</button><button id="sound" class="btn">♫ SOUND ON</button><button id="nudge" class="btn">⚡ NUDGE · N</button></div>
  <h2>HOW TO PLAY</h2>
  <p><span class="keys">SPACE</span> launches. Hold <span class="keys">A</span> and <span class="keys">D</span> or arrow keys for constant flipper pressure. On touchscreens, use the bottom of the table or the two transparent flip buttons.</p>
  <h2>PRIZES</h2>
- <ul><li>11 glowing bumpers and 5 purple targets.</li><li>Four prizes: points, jackpot, extra ball and multiplier.</li><li>Collect four prizes for a 5,000 point bonus.</li><li>Three quick hits earn combo bonuses.</li><li>The open gap between flippers drains missed balls.</li></ul>
+ <ul><li>3 starter bumpers, your custom bumpers, and 5 purple targets.</li><li>Four prizes: points, jackpot, extra ball and multiplier.</li><li>Collect four prizes for a 5,000 point bonus.</li><li>Three quick hits earn combo bonuses.</li><li>The open gap between flippers drains missed balls.</li></ul>
 </aside>
 <script>
 'use strict';
@@ -81,18 +119,11 @@ const dom={score:$('score'),best:$('best'),balls:$('balls'),multi:$('multi'),tar
 const palette={cyan:'#4fdaff',pink:'#ff55b6',yellow:'#ffd36d',green:'#78ffcb',purple:'#ad86ff'};
 let score=0,best=0,balls=3,level=1,bumperHits=0,targetCount=0,nudges=3,phase='ready',paused=false,mute=false,lastBumperTick=-500,combo=0;
 try{best=Number(localStorage.getItem('nexus-neon-pinball-best-v2'))||0}catch(e){}
+// The upper three are permanent starter bumpers. Build your own below!
 const bumpers=[
 {x:178,y:262,r:34,color:palette.pink,hit:-100,points:150},
 {x:367,y:251,r:34,color:palette.cyan,hit:-100,points:150},
-{x:273,y:387,r:36,color:palette.yellow,hit:-100,points:250},
-{x:273,y:255,r:22,color:palette.green,hit:-100,points:200},
-{x:112,y:369,r:26,color:palette.cyan,hit:-100,points:175},
-{x:438,y:371,r:25,color:palette.pink,hit:-100,points:175},
-{x:177,y:477,r:25,color:palette.purple,hit:-100,points:200},
-{x:397,y:481,r:26,color:palette.green,hit:-100,points:200},
-{x:274,y:592,r:23,color:palette.pink,hit:-100,points:300},
-{x:106,y:552,r:20,color:palette.yellow,hit:-100,points:250},
-{x:452,y:578,r:20,color:palette.cyan,hit:-100,points:250}
+{x:273,y:387,r:35,color:palette.yellow,hit:-100,points:250}
 ];
 const targets=[125,197,269,341,413].map((x,i)=>({x,y:167,lit:false,hit:-1,i}));
 const pegs=[{x:86,y:437,r:9},{x:476,y:438,r:9},{x:300,y:472,r:8},{x:181,y:634,r:8},{x:424,y:639,r:8}];
