@@ -312,7 +312,7 @@ function resolveCircle(b,x,y,r,bounce){const cfg=ballTypes[b.type]||ballTypes.st
 function hitBumper(b,o,x,y){
  const t=types[o.kind],radius=t.r+(o.kind==='growing'?(o.grow||0)*6:0);
  if(o.kind==='rotating'){const a=clock*2.2+o.id*.23;x+=Math.cos(a)*t.sweep;y+=Math.sin(a)*t.sweep}
- if(o.cooldown>clock&&o.kind!=='phase')return;
+ // Cooldowns limit scoring, NEVER physical collision resolution for solid bumpers.
  const d=Math.hypot(b.x-x,b.y-y);
  if(o.kind==='phase'){
   if(d<radius+b.r&&o.cooldown<=clock){o.cooldown=clock+.25;addPoints(t.score*o.level,t.points*o.level,x,y,t.color,o.kind,b);sound(880,.05)}
