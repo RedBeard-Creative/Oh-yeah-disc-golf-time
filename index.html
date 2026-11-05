@@ -451,7 +451,15 @@ function refreshShop(){const b=selectedPart();
  $('builder').textContent=isBuild?'✓ PLAY':'🛠 BUILD';$('builder').classList.toggle('active',isBuild);$('placement-tip').hidden=!isBuild;
  for(const el of document.querySelectorAll('#bumper-shop .shop-item'))el.classList.toggle('active',el.dataset.kind===selectedKind);
  for(const el of document.querySelectorAll('#ball-shop .ball-item'))el.classList.toggle('active',el.dataset.ball===chosenBall);
- for(const el of document.querySelectorAll('.mode'))el.classList.toggle('active',el.dataset.mode===mode);
+ for(const el of document.querySelectorAll('.mode')){
+ const map=maps[el.dataset.mode],unlocked=!!mapUnlocks[el.dataset.mode];
+ el.classList.toggle('active',el.dataset.mode===mode);
+ el.classList.toggle('locked',!unlocked);el.classList.toggle('unlocked',unlocked);
+ const label=el.querySelector('.map-cost');
+ if(label)label.textContent=el.dataset.mode===mode?'▶ CURRENT':unlocked?'✓ UNLOCKED':'🔒 $'+map.unlock.toLocaleString();
+ el.title=unlocked?'Play '+map.short:'Unlock '+map.short+' for $'+map.unlock.toLocaleString();
+}
+$('map-progress').textContent=mapNames.filter(k=>mapUnlocks[k]).length+'/7 WORLDS UNLOCKED · NEXT: '+(mapNames.find(k=>!mapUnlocks[k])?maps[mapNames.find(k=>!mapUnlocks[k])].short+' ($'+maps[mapNames.find(k=>!mapUnlocks[k])].unlock.toLocaleString()+')':'ALL WORLDS UNLOCKED!');
  for(const [side,r] of Object.entries(railSpecs))$('rail-'+side).textContent=rails[side]?r.name+' ✓':r.name+' · $'+r.price.toLocaleString();
  $('map-description').textContent=maps[mode].desc;
  $('progress').textContent='Research L'+researchLevel+' · Prestige '+prestigeLevel+' · Contracts '+contractsDone+' · Total hits '+totalHits;
@@ -522,7 +530,30 @@ function machineAction(id){
 }
 for(const el of document.querySelectorAll('[data-machine]'))el.addEventListener('click',()=>machineAction(el.dataset.machine));
 
-function chooseMode(value){if(!maps[value])return;mode=value;balls=[];ensureBall();message(maps[value].desc);save();refreshShop()}
+
+function applyMapTheme(){
+ const m=maps[mode]||maps.uloop;
+ if(document?.documentElement?.style?.setProperty)document.documentElement.style.setProperty('--theme-accent',m.accent);
+ if(document?.body?.style)document.body.style.background='radial-gradient(ellipse at 50% 42%,'+m.colors[1]+' 0%,'+m.colors[0]+' 55%,'+m.colors[2]+' 100%)';
+ const frame=$('boardbox');
+ if(frame?.style){frame.style.borderColor=m.accent;frame.style.boxShadow='0 0 44px '+m.accent+'37,0 18px 80px #000a'}
+}
+
+function chooseMode(value){
+ if(!maps[value])return false;
+ if(!mapUnlocks[value]){
+  const price=maps[value].unlock;
+  if(wallet-price<MIN_CASH){
+   message('🔒 '+maps[value].short+' costs $'+price.toLocaleString()+'. Earn $'+Math.max(0,price-wallet+MIN_CASH).toLocaleString()+' more to unlock it.');
+   refreshShop();return false;
+  }
+  cashChange(-price);mapUnlocks[value]=true;
+  sound(980,.18);notify('WORLD UNLOCKED!',290,340,maps[value].accent);
+ }
+ mode=value;balls=[];ensureBall();applyMapTheme();
+ message(maps[value].desc);
+ save();refreshShop();return true;
+}
 $('builder').onclick=()=>toggleBuild(!isBuild);$('play').onclick=()=>toggleBuild(false);
 $('menu').onclick=()=>showMenu($('overlay').hidden);$('close').onclick=()=>showMenu(false);
 $('full').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen()}catch(e){message('Open StackBlitz preview in its own tab before requesting fullscreen.');showMenu(true)}};
@@ -721,7 +752,7 @@ function step(dt){
 function updateFlippersOne(f,dt){const target=f.hold?f.up:f.rest,delta=clamp(target-f.a,-11.5*dt,11.5*dt);f.a+=delta;f.omega=delta/dt}
 let last=performance.now(),acc=0,frames=0;
 function frame(t){acc+=Math.min(.05,(t-last)/1000);last=t;let steps=0;while(acc>=DT&&steps++<16){step(DT);acc-=DT}if(steps>=16)acc=0;render();if(++frames%20===0){refreshShop();if(savePending){save();savePending=false}}requestAnimationFrame(frame)}
-load();ensureBall();refreshShop();requestAnimationFrame(frame);
+load();applyMapTheme();ensureBall();refreshShop();requestAnimationFrame(frame);
 window.__pinballTest={get:()=>({
  wallet,score,mode,balls:balls.length,ballStates:balls.map(b=>({x:b.x,y:b.y,vx:b.vx,vy:b.vy,type:b.type,path:b.modePath?.kind||null,railSide:b.modePath?.side||null})),
  income,parts:parts.map(p=>({...p})),rails:{...rails},selected,isBuild,chosenBall,
