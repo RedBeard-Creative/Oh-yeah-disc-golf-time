@@ -67,7 +67,7 @@ h1{font-size:20px;color:#8feeff;letter-spacing:.06em;margin:1px 0 5px}h2{font-si
 <div id="drag-ghost" hidden></div>
 <aside id="overlay" hidden>
  <div class="panel-title"><div><div class="eyebrow">NEXUS ARCADE · G32</div><h1>PINBALL TYCOON MEGA</h1></div><button id="close" class="close">✕</button></div>
- <div class="statgrid"><div class="stat"><span>SCORE</span><strong id="score">0</strong></div><div class="stat"><span>BEST</span><strong id="best">0</strong></div><div class="stat"><span>BALLS ACTIVE</span><strong id="active-balls">1</strong></div><div class="stat"><span>ROUND INCOME</span><strong id="income">$0</strong></div></div>
+ <div class="statgrid"><div class="stat"><span>SCORE</span><strong id="score">0</strong></div><div class="stat"><span>BEST</span><strong id="best">0</strong></div><div class="stat"><span>BALLS ACTIVE</span><strong id="active-balls">1</strong></div><div class="stat"><span>ROUND INCOME</span><strong id="income">$0</strong></div><div class="stat"><span>TABLE VALUE</span><strong id="table-value">$0</strong></div></div>
  <div id="message">Earn slowly. Build the table you want.</div>
  <h2>Table style</h2>
  <div class="modegrid" id="map-grid"></div><p class="small" id="map-description">Seven completely different physics layouts.</p>
@@ -415,15 +415,15 @@ function advanceBall(b,dt){
  for(const o of parts){const p=pegGrid[o.index];hitBumper(b,o,p.x,p.y)}
  flipperBall(b,left);flipperBall(b,right);
  if(mode==='tower'||mode==='twins'||ownedMachines.emergency)for(const f of upperFlippers)flipperBall(b,f);
- if(ownedMachines.speed&&Math.abs(b.y-295)<9&&Math.abs(b.x-291)<32&&clock>b.speedUntil){
+ if(ownedMachines.speed&&Math.abs(b.y-295)<9&&Math.abs(b.x-291)<32&&(!b.speedUntil||clock>b.speedUntil)){
   b.vy-=330;b.speedUntil=clock+.45;notify('SPEED BOOST',b.x,b.y,COLORS.green)
  }
  tryRail(b)
 }
 function canBuild(index,kind,ignoreId=null){const p=pegGrid[index],t=types[kind];if(!p||!t)return false;
- if(p.x-t.r<71||p.x+t.r>495||p.y-t.r<161||p.y+t.r>655)return false;
- if(starter.some(s=>Math.hypot(s.x-p.x,s.y-p.y)<s.r+t.r+8))return false;
- for(const b of parts){if(b.id===ignoreId)continue;const q=pegGrid[b.index];if(Math.hypot(q.x-p.x,q.y-p.y)<t.r+types[b.kind].r+9)return false}
+ if(p.x-t.r-(t.sweep||0)<71||p.x+t.r+(t.sweep||0)>495||p.y-t.r-(t.sweep||0)<161||p.y+t.r+(t.sweep||0)>655)return false;
+ if(starter.some(s=>Math.hypot(s.x-p.x,s.y-p.y)<s.r+t.r+(t.sweep||0)+8))return false;
+ for(const b of parts){if(b.id===ignoreId)continue;const q=pegGrid[b.index];if(Math.hypot(q.x-p.x,q.y-p.y)<t.r+(t.sweep||0)+types[b.kind].r+(types[b.kind].sweep||0)+15)return false}
  if(rails.left&&p.col===0&&p.row>=2&&p.row<=5)return false;
  if(rails.right&&p.col===6&&p.row>=2&&p.row<=5)return false;
  return true
@@ -433,7 +433,9 @@ function costUpgrade(b){return Math.round(types[b.kind].cost*(b.level===1?.7:1.1
 function refreshShop(){const b=selectedPart();
  $('cash').textContent='$'+wallet.toLocaleString();
  $('score').textContent=score.toLocaleString();$('best').textContent=best.toLocaleString();
- $('income').textContent='$'+income;$('active-balls').textContent=balls.length;$('owned').textContent=parts.length+'/26';
+ $('income').textContent='$'+income;
+ $('table-value').textContent='$'+Math.round(parts.reduce((v,p)=>v+types[p.kind].cost+(p.level-1)*types[p.kind].cost*.7,0)+Object.entries(rails).reduce((v,[k,on])=>v+(on&&railSpecs[k]?railSpecs[k].price:0),0)).toLocaleString();
+ $('active-balls').textContent=balls.length;$('owned').textContent=parts.length+'/26';
  $('selection').textContent=b?b.kind.toUpperCase()+' L'+b.level:typeof selected==='string'&&selected.startsWith('rail')?selected.toUpperCase():'None';
  $('builder').textContent=isBuild?'✓ PLAY':'🛠 BUILD';$('builder').classList.toggle('active',isBuild);$('placement-tip').hidden=!isBuild;
  for(const el of document.querySelectorAll('#bumper-shop .shop-item'))el.classList.toggle('active',el.dataset.kind===selectedKind);
@@ -660,7 +662,12 @@ if(mode==='tower'){neonLine(57,306,379,306,COLORS.pink,5);neonLine(199,490,509,4
  if(mode==='flip'){const a=phaseTimer*.24;g.textAlign='center';g.font='bold 20px system-ui';g.fillStyle=COLORS.purple;g.fillText('GRAVITY FIELD',285,117);g.beginPath();g.moveTo(285,157);g.lineTo(285+Math.sin(a)*33,157+Math.cos(a)*33);g.strokeStyle=COLORS.green;g.lineWidth=5;g.stroke()}
  for(const socket of pegGrid){g.fillStyle='#335876';g.beginPath();g.arc(socket.x,socket.y,5,0,TAU);g.fill();if(isBuild){g.strokeStyle='#4f8dbf';g.lineWidth=1;g.beginPath();g.arc(socket.x,socket.y,10,0,TAU);g.stroke()}}
  for(const b of starter)drawBumper(b.x,b.y,b.kind,1);
- for(const part of parts){const p=pegGrid[part.index];drawBumper(p.x,p.y,part.kind,part.level);if(isBuild&&selected===part.id){circle(p.x,p.y,types[part.kind].r+8,'#fff',false)}}
+ for(const part of parts){const p=pegGrid[part.index],sweep=types[part.kind].sweep||0,angle=clock*2.2+part.id*.23;
+ const cx=p.x+Math.cos(angle)*sweep,cy=p.y+Math.sin(angle)*sweep;
+ if(sweep)circle(p.x,p.y,sweep,COLORS.purple,false);
+ drawBumper(cx,cy,part.kind,part.level);
+ if(isBuild&&selected===part.id)circle(p.x,p.y,types[part.kind].r+sweep+8,'#fff',false)
+}
  for(const [side,r] of Object.entries(railSpecs)){
  const p=r.entry;g.save();g.globalAlpha=rails[side]?1:.32;circle(p[0],p[1],side==='rescue'?16:11,rails[side]?COLORS.gold:COLORS.blue);
  if(rails[side]){
