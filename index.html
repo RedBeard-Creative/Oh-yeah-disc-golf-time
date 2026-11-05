@@ -168,7 +168,7 @@ const railPaths={
  right:[[482,497],[483,381],[485,254],[465,172],[393,135],[314,131],[250,147],[205,184],[179,246],[193,317],[294,379]]
 };
 const uPath=[[112,675],[108,540],[108,392],[108,244],[133,164],[225,110],[352,110],[445,168],[466,246],[466,402],[466,550]];
-let wallet=280,score=0,best=0,income=0,roundHits=0,mode='classic',isBuild=false,selectedKind='basic',selected=null,
+let wallet=280,score=0,best=0,income=0,roundHits=0,mode='uloop',isBuild=false,selectedKind='basic',selected=null,
   movingId=null,parts=[],rails={left:false,right:false},idCounter=1,balls=[],tick=0,clock=0,pausedByMenu=false,
   pointerMap=new Map(),particles=[],popups=[],soundOn=true,ctxAudio=null,statsLog=[],railCooldown=0,phaseTimer=0,spawnCooldown=0;
 let chosenBall='steel',mapUnlocks={},railPathsExtra={},customRailPoints=[],customRailPending=false,railDiverter=false,ownedMachines={},machineCooldowns={},activeSwitchUntil=0,magnetPulseUntil=0,incomeMultiplierUntil=0,comboHits=0,comboUntil=0,contractsDone=0,totalHits=0,totalRailTrips=0,researchLevel=0,prestigeLevel=0;
@@ -176,8 +176,43 @@ let blueprints=[null,null,null],selectedIds=new Set(),brushMode=false,previewMod
 let savePending=false;
 const left={x:195,y:734,len:95,rest:.19,up:-.62,a:.19,omega:0,hold:false},right={x:382,y:734,len:95,rest:Math.PI-.19,up:Math.PI+.62,a:Math.PI-.19,omega:0,hold:false};
 const storageKey='nexus-pinball-tycoon-v2';
-function save(){try{localStorage.setItem(storageKey,JSON.stringify({wallet,score,best,mode,parts:parts.map(b=>({id:b.id,index:b.index,kind:b.kind,level:b.level})),rails,idCounter}))}catch(e){}}
-function load(){try{const d=JSON.parse(localStorage.getItem(storageKey)||'null');if(!d)return;wallet=Number.isFinite(d.wallet)?Math.max(MIN_CASH,Math.floor(d.wallet)):wallet;best=Number.isFinite(d.best)?d.best:best;score=Number.isFinite(d.score)?d.score:score;mode=['classic','uloop','flip'].includes(d.mode)?d.mode:mode;rails={left:!!d.rails?.left,right:!!d.rails?.right};if(Array.isArray(d.parts)){for(const b of d.parts.slice(0,26)){if(!types[b.kind]||!Number.isInteger(b.index)||b.index<0||b.index>=pegGrid.length)continue;if(parts.some(p=>p.index===b.index))continue;parts.push({id:Math.max(1,Number(b.id)||idCounter++),index:b.index,kind:b.kind,level:Math.max(1,Math.min(3,Number(b.level)||1)),hit:0,cooldown:0})}}idCounter=Math.max(Number(d.idCounter)||1,1,...parts.map(p=>p.id+1))}catch(e){}}
+function save(){try{localStorage.setItem(storageKey,JSON.stringify({
+ wallet,score,best,mode,parts:parts.map(b=>({id:b.id,index:b.index,kind:b.kind,level:b.level})),rails,idCounter,
+ chosenBall,ownedMachines,researchLevel,prestigeLevel,contractsDone,totalHits,totalRailTrips,blueprints,scoreByKind,
+ customRailPoints
+ }))}catch(e){}}
+function load(){try{const d=JSON.parse(localStorage.getItem(storageKey)||'null');if(!d)return;
+ wallet=Number.isFinite(d.wallet)?Math.max(MIN_CASH,Math.floor(d.wallet)):wallet;
+ best=Number.isFinite(d.best)?d.best:best;score=Number.isFinite(d.score)?d.score:score;
+ mode=maps[d.mode]?d.mode:d.mode==='flip'?'orbital':d.mode==='classic'?'uloop':'uloop';
+ rails=Object.fromEntries(Object.keys(railSpecs).map(k=>[k,!!d.rails?.[k]]));
+ chosenBall=ballTypes[d.chosenBall]?d.chosenBall:'steel';
+ if(Array.isArray(d.parts)){for(const b of d.parts.slice(0,26)){
+ if(!types[b.kind]||!Number.isInteger(b.index)||b.index<0||b.index>=pegGrid.length)continue;
+ if(parts.some(p=>p.index===b.index))continue;
+ parts.push({id:Math.max(1,Number(b.id)||idCounter++),index:b.index,kind:b.kind,level:Math.max(1,Math.min(3,Number(b.level)||1)),hit:0,cooldown:0,grow:0})
+ }}idCounter=Math.max(Number(d.idCounter)||1,1,...parts.map(p=>p.id+1));
+ ownedMachines=Object.fromEntries(Object.keys(machineSpecs).map(k=>[k,!!d.ownedMachines?.[k]]));
+ researchLevel=Number(d.researchLevel)||0;prestigeLevel=Number(d.prestigeLevel)||0;
+ contractsDone=Number(d.contractsDone)||0;totalHits=Number(d.totalHits)||0;
+ totalRailTrips=Number(d.totalRailTrips)||0;scoreByKind=d.scoreByKind&&typeof d.scoreByKind==='object'?d.scoreByKind:{};
+ blueprints=Array.isArray(d.blueprints)?d.blueprints.slice(0,3):[null,null,null];
+ customRailPoints=Array.isArray(d.customRailPoints)?d.customRailPoints.slice(0,2).filter(i=>Number.isInteger(i)&&i>=0&&i<49):[];
+ }catch(e){}}
+
+function initCatalog(){
+ $('map-grid').innerHTML=Object.entries(maps).map(([id,m],i)=>
+ '<button class="mode" data-mode="'+id+'"><b>MAP0'+(i+1)+'</b><br>'+m.title.split(' · ')[1]+'</button>').join('');
+ $('bumper-shop').innerHTML=Object.entries(types).map(([kind,t])=>
+ '<button class="shop-item" data-kind="'+kind+'" title="'+t.desc+'"><b>'+t.icon+' '+t.name+'</b><small>'+t.desc+'</small><em>$'+t.cost.toLocaleString()+' · +$'+t.points+'/hit</em></button>').join('');
+ $('ball-shop').innerHTML=Object.entries(ballTypes).map(([kind,t])=>
+ '<button class="shop-item ball-item" data-ball="'+kind+'"><b>'+t.icon+' '+t.name+'</b><small>'+t.desc+'</small><em>'+(t.cost?'$'+t.cost+'/ball':'Free')+'</em></button>').join('');
+ $('rail-shop').innerHTML=Object.entries(railSpecs).map(([id,r])=>
+ '<button class="btn" id="rail-'+id+'" data-rail="'+id+'">'+r.name+' · $'+r.price.toLocaleString()+'</button>').join('');
+ $('machine-shop').innerHTML=Object.entries(machineSpecs).map(([id,m])=>
+ '<button class="btn machine-buy" data-machine="'+id+'"><b>'+m.key+' · '+m.name+'</b><br><small>$'+m.price+' · '+m.desc+'</small></button>').join('');
+}
+
 function colorFor(k){return types[k].color}
 function sound(hz=420,length=.045){if(!soundOn)return;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return;ctxAudio??=new A();if(ctxAudio.state==='suspended')ctxAudio.resume();const o=ctxAudio.createOscillator(),a=ctxAudio.createGain();o.type='triangle';o.frequency.value=hz;a.gain.setValueAtTime(.045,ctxAudio.currentTime);a.gain.exponentialRampToValueAtTime(.0001,ctxAudio.currentTime+length);o.connect(a);a.connect(ctxAudio.destination);o.start();o.stop(ctxAudio.currentTime+length)}catch(e){}}
 function message(s){$('message').textContent=s}
@@ -189,9 +224,30 @@ function addPoints(points,earn,x,y,c=COLORS.blue){score+=points;best=Math.max(sc
 function emptyBall(){return {x:0,y:0,vx:0,vy:0,r:R,modePath:null,rail:false,catchUntil:0,cooldown:0,hits:0,earned:0}}
 function pathSegments(points){const distances=[],total=points.reduce((sum,p,i)=>{if(i){const q=points[i-1],v=Math.hypot(p[0]-q[0],p[1]-q[1]);distances.push(v);return sum+v}return sum},0);return {points,distances,total}}
 const uRail=pathSegments(uPath),leftRail=pathSegments(railPaths.left),rightRail=pathSegments(railPaths.right);
+
+const spiralPath=pathSegments(Array.from({length:77},(_,i)=>{const t=i/76,a=-Math.PI*3.9*t,r=185-140*t;return [284+Math.cos(a)*r,365+Math.sin(a)*r]}));
+const eightPath=pathSegments(Array.from({length:105},(_,i)=>{const t=i/104*Math.PI*4;return [285+Math.sin(t)*177,370+Math.sin(2*t)*147]}));
+const topPath=pathSegments([[94,183],[108,108],[240,107],[373,108],[485,174],[440,290],[294,379]]);
+const rescuePath=pathSegments([[270,767],[144,694],[94,597],[100,410],[166,270],[290,220]]);
+const railSpiralPath=pathSegments(Array.from({length:53},(_,i)=>{const t=i/52,a=Math.PI*2.6*t,r=115-77*t;return [286+Math.cos(a)*r,419+Math.sin(a)*r]}).concat([[294,379]]));
+const crossPath=pathSegments([[400,428],[312,365],[200,306],[100,259],[190,170],[294,379]]);
+const tunnelPath=pathSegments([[130,528],[164,630],[295,706],[420,630],[442,456],[294,379]]);
+const splitPathA=pathSegments([[390,560],[440,469],[427,330],[337,237],[294,379]]);
+const splitPathB=pathSegments([[390,560],[340,454],[207,388],[132,295],[294,379]]);
+const elevatorPath=pathSegments([[294,695],[305,578],[305,450],[295,335],[280,215]]);
+const extraPaths={top:topPath,rescue:rescuePath,spiral:railSpiralPath,cross:crossPath,tunnel:tunnelPath,split:splitPathA,elevator:elevatorPath};
+function railPathFor(side){
+ if(side==='left')return leftRail;if(side==='right')return rightRail;
+ if(side==='split')return railDiverter?splitPathB:splitPathA;
+ if(side==='custom'&&customRailPoints.length===2){
+ const a=pegGrid[customRailPoints[0]],b=pegGrid[customRailPoints[1]];
+ return pathSegments([[a.x,a.y],[a.x+(b.x-a.x)*.32,Math.min(a.y,b.y)-85],[b.x-(b.x-a.x)*.15,Math.min(a.y,b.y)-60],[b.x,b.y]]);
+ }return extraPaths[side]||leftRail;
+}
+
 function posOn(path,d){let leftDist=d;for(let i=0;i<path.distances.length;i++){const len=path.distances[i];if(leftDist<=len||i===path.distances.length-1){const a=path.points[i],b=path.points[i+1],t=clamp(leftDist/len,0,1),dx=(b[0]-a[0])/len,dy=(b[1]-a[1])/len;return {x:a[0]+(b[0]-a[0])*t,y:a[1]+(b[1]-a[1])*t,dx,dy,segment:i}}leftDist-=len}return {x:0,y:0,dx:0,dy:1,segment:0}}
 function attach(b,path,kind,side){b.modePath={path,at:0,kind,side,speed:kind==='u'?530:610};let p=posOn(path,0);b.x=p.x;b.y=p.y;b.vx=0;b.vy=0}
-function spawn(initial=false){const b=emptyBall();if(mode==='uloop'){attach(b,uRail,'u','left')}else{b.x=initial?128:170+Math.random()*230;b.y=142;b.vx=(Math.random()-.5)*240;b.vy=115}balls.push(b);return b}
+function spawn(initial=false){const b=emptyBall();if(mode==='uloop'){attach(b,uRail,'u','left')}else if(mode==='spiral'){attach(b,spiralPath,'u','left')}else if(mode==='eight'){attach(b,eightPath,'u','left')}else{b.x=initial?128:170+Math.random()*230;b.y=142;b.vx=(Math.random()-.5)*240;b.vy=115}balls.push(b);return b}
 function ensureBall(){if(balls.length===0)spawn(true)}
 function dropBall(extra=false){if(extra){if(balls.length>=6){message('Six balls is the maximum.');return false}const cost=20+10*(balls.length-1);if(wallet-cost<MIN_CASH){message('Keep the $75 safety reserve. Score more to add a ball!');return false}cashChange(-cost)}spawn(false);refreshShop();return true}
 function setback(){const upkeep=Math.max(2,Math.ceil(parts.reduce((v,p)=>v+types[p.kind].cost,0)/700)+(rails.left?2:0)+(rails.right?2:0));if(income<upkeep){const fee=Math.min(18,Math.max(1,upkeep-income));cashChange(-fee);notify('-$'+fee+' upkeep',295,462,COLORS.pink);if(balls.length>1){balls.pop();notify('LOST EXTRA BALL',310,500,COLORS.pink)}}else if(income>upkeep*4){notify('PROFIT ROUND!',300,430,COLORS.green)}income=0;roundHits=0;savePending=true;reduceExtras()}
@@ -277,9 +333,13 @@ function refreshShop(){const b=selectedPart();
  $('income').textContent='$'+income;$('active-balls').textContent=balls.length;$('owned').textContent=parts.length+'/26';
  $('selection').textContent=b?b.kind.toUpperCase()+' L'+b.level:typeof selected==='string'&&selected.startsWith('rail')?selected.toUpperCase():'None';
  $('builder').textContent=isBuild?'✓ PLAY':'🛠 BUILD';$('builder').classList.toggle('active',isBuild);$('placement-tip').hidden=!isBuild;
- for(const el of document.querySelectorAll('.shop-item'))el.classList.toggle('active',el.dataset.kind===selectedKind);
+ for(const el of document.querySelectorAll('#bumper-shop .shop-item'))el.classList.toggle('active',el.dataset.kind===selectedKind);
+ for(const el of document.querySelectorAll('#ball-shop .ball-item'))el.classList.toggle('active',el.dataset.ball===chosenBall);
  for(const el of document.querySelectorAll('.mode'))el.classList.toggle('active',el.dataset.mode===mode);
- for(const side of ['left','right'])$('rail-'+side).textContent=rails[side]?side.toUpperCase()+' RAIL ✓ OWNED':side.toUpperCase()+' RAIL · $900';
+ for(const [side,r] of Object.entries(railSpecs))$('rail-'+side).textContent=rails[side]?r.name+' ✓':r.name+' · $'+r.price.toLocaleString();
+ $('map-description').textContent=maps[mode].desc;
+ $('progress').textContent='Research L'+researchLevel+' · Prestige '+prestigeLevel+' · Contracts '+contractsDone+' · Total hits '+totalHits;
+ for(const [id,m] of Object.entries(machineSpecs)){const button=document.querySelector('[data-machine="'+id+'"]');if(button)button.innerHTML='<b>'+m.key+' · '+m.name+'</b><br><small>'+(ownedMachines[id]?'OWNED · press '+m.key:'$'+m.price+' · '+m.desc)+'</small>'}
  $('upgrade').disabled=!isBuild||!b||b.level>=3||wallet-costUpgrade(b)<MIN_CASH;
  $('upgrade').textContent=b&&b.level<3?'⬆ UPGRADE $'+costUpgrade(b):'⬆ UPGRADE';
  $('sell').disabled=!isBuild||!b;
@@ -300,13 +360,14 @@ function selectPeg(index){
  cashChange(-t.cost);parts.push({id:idCounter++,kind:selectedKind,index,level:1,cooldown:0});selected=null;sound(800,.08);message('Placed '+selectedKind+' on peg '+pegGrid[index].key+'.');refreshShop();save()
 }
 function nearestPeg(x,y){let index=-1,distance=29;for(let i=0;i<pegGrid.length;i++){const p=pegGrid[i],d=Math.hypot(x-p.x,y-p.y);if(d<distance){distance=d;index=i}}return index}
-function chooseMode(value){if(!['classic','uloop','flip'].includes(value))return;mode=value;balls=[];ensureBall();message(value==='uloop'?'Gravity U: ball climbs, curves across the roof, then descends.':value==='flip'?'Flip Field: gravity slowly rotates during play.':'Classic downward gravity.');save();refreshShop()}
+function chooseMode(value){if(!maps[value])return;mode=value;balls=[];ensureBall();message(maps[value].desc);save();refreshShop()}
 $('builder').onclick=()=>toggleBuild(!isBuild);$('play').onclick=()=>toggleBuild(false);
 $('menu').onclick=()=>showMenu($('overlay').hidden);$('close').onclick=()=>showMenu(false);
 $('full').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen()}catch(e){message('Open StackBlitz preview in its own tab before requesting fullscreen.');showMenu(true)}};
 document.addEventListener('fullscreenchange',()=>$('full').textContent=document.fullscreenElement?'⤢':'⛶');
 document.addEventListener('pointerdown',e=>{if(!$('overlay').hidden&&!$('overlay').contains(e.target)&&!$('menu').contains(e.target)&&!$('builder').contains(e.target)&&e.target!==canvas)showMenu(false)});
-for(const el of document.querySelectorAll('.shop-item'))el.onclick=()=>{selectedKind=el.dataset.kind;selected=null;movingId=null;if(!isBuild)toggleBuild(true);showMenu(false);refreshShop()};
+for(const el of document.querySelectorAll('#bumper-shop .shop-item'))el.onclick=()=>{selectedKind=el.dataset.kind;selected=null;movingId=null;if(!isBuild)toggleBuild(true);showMenu(false);refreshShop()};
+for(const el of document.querySelectorAll('#ball-shop .ball-item'))el.onclick=()=>{chosenBall=el.dataset.ball;message('Selected '+ballTypes[chosenBall].name+' balls. The next purchased ball uses this type.');refreshShop();save()};
 for(const el of document.querySelectorAll('.mode'))el.onclick=()=>chooseMode(el.dataset.mode);
 for(const side of ['left','right'])$('rail-'+side).onclick=()=>{if(rails[side]){selected='rail-'+side;message('Rail '+side+' is installed. Rails are permanent upgrades in this version.');refreshShop();return}if(parts.some(p=>{const q=pegGrid[p.index];return q.col===(side==='left'?0:6)&&q.row>=2&&q.row<=5})){message('Move bumpers away from this rail mounting lane first.');return}if(wallet-900<MIN_CASH){message('Not enough cash to install a rail.');return}cashChange(-900);rails[side]=true;message('Installed the '+side+' rail!');sound(1020,.13);save();refreshShop()};
 $('upgrade').onclick=()=>{const b=selectedPart();if(!b||b.level>=3)return;const cost=costUpgrade(b);if(wallet-cost<MIN_CASH)return;cashChange(-cost);b.level++;sound(870,.07);save();refreshShop();message('Upgraded to level '+b.level+'. More points and money per hit.')};
@@ -364,7 +425,7 @@ function step(dt){
 function updateFlippersOne(f,dt){const target=f.hold?f.up:f.rest,delta=clamp(target-f.a,-11.5*dt,11.5*dt);f.a+=delta;f.omega=delta/dt}
 let last=performance.now(),acc=0,frames=0;
 function frame(t){acc+=Math.min(.05,(t-last)/1000);last=t;let steps=0;while(acc>=DT&&steps++<16){step(DT);acc-=DT}if(steps>=16)acc=0;render();if(++frames%20===0){refreshShop();if(savePending){save();savePending=false}}requestAnimationFrame(frame)}
-load();ensureBall();refreshShop();requestAnimationFrame(frame);
+initCatalog();load();ensureBall();refreshShop();requestAnimationFrame(frame);
 window.__pinballTest={get:()=>({wallet,score,mode,balls:balls.length,ballStates:balls.map(b=>({x:b.x,y:b.y,vx:b.vx,vy:b.vy,path:b.modePath?.kind||null})),income,parts:parts.map(p=>({...p})),rails:{...rails},selected,isBuild,flippers:{left:left.a,right:right.a,leftHeld:left.hold,rightHeld:right.hold}}),step:(n=1)=>{for(let i=0;i<n;i++)step(DT)},canBuild,selectPeg,toggleBuild,chooseMode,spawn,dropBall,setBall:(x,y,vx,vy)=>{const b=balls[0]||spawn();b.modePath=null;b.x=x;b.y=y;b.vx=vx;b.vy=vy},walletSet:v=>{wallet=v;refreshShop()},hold:(side,on)=>{(side==='left'?left:right).hold=on},cashChange,setback,partSet:(index,kind)=>{parts.push({id:idCounter++,kind,index,level:1,cooldown:0})}};
 })();
 </script>
