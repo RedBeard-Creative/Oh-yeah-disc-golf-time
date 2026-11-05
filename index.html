@@ -1,56 +1,149 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"><title>Nexus Watch — Neon Pinball</title><style>
-*{box-sizing:border-box}body{margin:0;min-height:100dvh;display:flex;align-items:center;flex-direction:column;background:radial-gradient(ellipse at top,#17315a,#070b16 70%);font:14px system-ui;color:#eefaff;padding:12px;touch-action:manipulation}h1{font-size:20px;letter-spacing:.16em;color:#b5eeff;margin:2px 0 4px}.sub{font-size:10px;letter-spacing:.15em;color:#91acc9;margin-bottom:12px}.shell{width:min(320px,94vw);border:7px solid #38485e;border-radius:37px;padding:6px;background:#101927;box-shadow:0 15px 40px #000a,0 0 28px #168cce44}canvas{display:block;width:100%;aspect-ratio:280/456;background:#061020;border-radius:23px;touch-action:none}.controls{width:min(320px,94vw);display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}button{cursor:pointer;color:#d8f9ff;border:1px solid #3884ae;background:#142a4c;border-radius:13px;padding:11px;font-weight:700;touch-action:none}.flipper{font-size:16px;padding:18px 8px;background:#174066}.flipper.on{background:#2a7fb0}.tools{display:flex;gap:8px;margin:10px 0}.help{max-width:335px;font-size:12px;color:#a3bdd9;line-height:1.5;text-align:center}#status{font-size:11px;color:#9affdb;margin:4px}
-</style></head><body><h1>NEON PINBALL</h1><div class="sub">NEXUS WATCH 01 · GAME G32</div><div class="shell"><canvas id="c" width="280" height="456"></canvas></div><div class="controls"><button id="l" class="flipper">◀ LEFT</button><button id="r" class="flipper">RIGHT ▶</button></div><div class="tools"><button id="launch">● LAUNCH</button><button id="restart">↻ NEW GAME</button><button id="sound">♫ ON</button></div><div id="status">3 BALLS · HIGH SCORES · MULTIPLIERS</div><div class="help">Launch with the button or Space. Hold left/right flippers or press A/D or ←/→. On phones, touch the bottom-left or bottom-right of the watch screen.</div>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#080d1b">
+<title>Neon Pinball — G32</title>
+<style>
+:root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;color:#e9faff;background:#070b17;font-synthesis:none}
+*{box-sizing:border-box}body{margin:0;min-height:100dvh;background:radial-gradient(ellipse 85% 55% at 50% 0%,#182e52 0%,#080e1e 65%,#060916 100%)}
+body::before{content:'';pointer-events:none;position:fixed;inset:0;opacity:.2;background-image:linear-gradient(#22446822 1px,transparent 1px),linear-gradient(90deg,#22446822 1px,transparent 1px);background-size:38px 38px}
+.page{position:relative;max-width:1120px;margin:0 auto;padding:22px 22px 28px}.header{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:15px}.brand{display:flex;align-items:center;gap:13px}.brandmark{background:#152c4b;border:1px solid #357cb0;color:#72dbff;border-radius:12px;width:43px;height:43px;display:grid;place-items:center;font-size:26px;box-shadow:0 0 25px #3996ff27}.eyebrow{font-size:11px;font-weight:800;letter-spacing:.26em;color:#73dcff}.header h1{font-size:clamp(24px,3.4vw,39px);letter-spacing:.08em;line-height:1;margin:4px 0 0;font-weight:900}.header h1 b{color:#ff5cb7}.tagline{font-size:12px;color:#95b2cd;text-align:right}.layout{display:grid;grid-template-columns:minmax(0,610px) minmax(235px,1fr);gap:20px;align-items:start}.board-container{min-width:0}.board-wrap{position:relative;background:linear-gradient(140deg,#344f71,#111e35 28%,#10192d 74%,#37668c);border-radius:23px;padding:9px;box-shadow:0 18px 60px #000a,0 0 40px #28aeff18;max-width:610px;margin:auto;border:1px solid #527092}.game{width:100%;height:auto;display:block;border-radius:15px;touch-action:none;aspect-ratio:600/840;background:#061022}
+.arcade-controls{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:13px}.btn{font-family:inherit;cursor:pointer;color:#ddfaff;border:1px solid #3b80a7;border-radius:12px;background:linear-gradient(160deg,#163454,#0a1c31);padding:14px 10px;font-weight:800;letter-spacing:.035em;user-select:none;-webkit-user-select:none;touch-action:none;transition:background .12s,transform .08s}.btn:active,.btn.down{transform:translateY(2px);background:linear-gradient(160deg,#236c8d,#143d65);box-shadow:0 0 19px #40bfff66}.btn-pink{border-color:#ef63a7;color:#ffc4e3}.btn-cyan{border-color:#4bd6ff;color:#b9f4ff}.control-hint{display:flex;justify-content:space-between;margin-top:5px;font-size:11px;color:#83a7c3}
+.panel{display:flex;flex-direction:column;gap:14px}.card{background:linear-gradient(150deg,#14243cdd,#0c1526e8);border:1px solid #2b4a69;border-radius:17px;padding:17px;box-shadow:0 12px 30px #0004}.card h2{color:#8de7ff;margin:0 0 12px;font-size:12px;letter-spacing:.18em;text-transform:uppercase}.score{font-size:clamp(34px,4vw,52px);letter-spacing:.02em;line-height:1;font-weight:900;font-variant-numeric:tabular-nums}.score small{font-size:14px;color:#a7b8ce;font-weight:600}.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:13px;margin-top:17px}.stat-label{font-size:10px;color:#8ba6c7;letter-spacing:.1em}.stat-val{font-size:20px;font-weight:800;color:#f1fbff;margin-top:3px}.pill{display:inline-block;padding:5px 8px;border:1px solid #2f9c88;border-radius:18px;color:#8af4d0;font-size:10px;font-weight:800;letter-spacing:.07em}.status-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px}.card p{font-size:13px;color:#b9cde0;line-height:1.6;margin:5px 0 8px}.keys{display:inline-block;background:#273a54;color:#d8faff;border:1px solid #4a708e;padding:2px 6px;border-radius:5px;font-size:11px;font-weight:800}.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.actions .btn{font-size:13px;padding:12px 7px}.actions #launch{grid-column:1/-1;padding:17px;background:linear-gradient(120deg,#1e4b66,#16769c);border-color:#5ce1f3}.footer{color:#7396b7;font-size:11px;margin-top:12px;text-align:center}.rules{margin:0;padding-left:19px;font-size:13px;color:#b8cde0;line-height:1.7}.note{font-size:12px!important;color:#82a6c3!important}
+@media(max-width:790px){.layout{grid-template-columns:minmax(0,1fr);gap:15px}.page{max-width:600px;padding:14px}.header{margin-bottom:12px}.tagline{display:none}.board-wrap{max-width:520px}.panel{display:grid;grid-template-columns:1fr 1fr}.card{padding:13px}.score{font-size:32px}.rules{font-size:12px}}
+@media(max-width:470px){.header h1{font-size:24px}.board-wrap{padding:6px;border-radius:18px}.game{border-radius:12px}.panel{grid-template-columns:1fr}.card p{margin:4px 0}.arcade-controls{gap:9px}.btn{padding:13px 8px}.controls .btn{font-size:14px}}
+</style>
+</head>
+<body>
+<main class="page">
+<header class="header"><div class="brand"><div class="brandmark" aria-hidden="true">✦</div><div><div class="eyebrow">NEXUS ARCADE · G32</div><h1>NEON <b>PINBALL</b></h1></div></div><div class="tagline">A full-size pinball game.<br>No watch frame. Just pinball.</div></header>
+<section class="layout">
+<div class="board-container"><div class="board-wrap"><canvas class="game" id="game" width="600" height="840" aria-label="Neon Pinball playfield"></canvas></div><div class="arcade-controls"><button id="left" class="btn btn-pink" aria-label="Left flipper">◀ LEFT FLIPPER</button><button id="right" class="btn btn-cyan" aria-label="Right flipper">RIGHT FLIPPER ▶</button></div><div class="control-hint"><span>KEYS: A / ←</span><span>KEYS: D / →</span></div></div>
+<aside class="panel">
+<div class="card"><h2>Current Game</h2><div class="score" id="score">0</div><div class="stats"><div><div class="stat-label">BEST SCORE</div><div class="stat-val" id="best">0</div></div><div><div class="stat-label">BALLS LEFT</div><div class="stat-val" id="balls">3</div></div><div><div class="stat-label">MULTIPLIER</div><div class="stat-val" id="multi">×1</div></div><div><div class="stat-label">TARGETS</div><div class="stat-val" id="targets">0 / 5</div></div></div><div class="status-row"><span class="pill" id="state">READY TO LAUNCH</span><span class="pill" id="nudges">3 NUDGES</span></div></div>
+<div class="card"><h2>Play</h2><div class="actions"><button id="launch" class="btn">● LAUNCH BALL · SPACE</button><button id="new" class="btn">↻ NEW GAME</button><button id="pause" class="btn">Ⅱ PAUSE</button><button id="sound" class="btn">♫ SOUND ON</button><button id="nudge" class="btn">⚡ NUDGE · N</button></div></div>
+<div class="card"><h2>How to play</h2><p>Press <span class="keys">SPACE</span> or Launch. The ball shoots up the right-hand lane and enters the table at the top.</p><p>Hold <span class="keys">A</span> / <span class="keys">D</span> or the arrow keys for the flippers. On touchscreens, tap either lower side of the table.</p><p>Hit colorful bumpers and all five purple targets to build your multiplier. Three balls per game!</p></div>
+<div class="card"><h2>Extra challenge</h2><ul class="rules"><li>Pink, cyan and yellow bumpers = 100 points.</li><li>Each purple target = 250 points.</li><li>Complete all five = 2,000 bonus points.</li><li>Every 7 bumper hits increases your multiplier.</li></ul><p class="note">Nudge helps free a slow or awkwardly positioned ball. You've got 3 per game.</p></div>
+</aside>
+</section><div class="footer">Offline-ready • Keyboard, mouse and touchscreen • Browser prototype of Game G32</div>
+</main>
 <script>
+'use strict';
 (()=>{
-const cv=document.querySelector('#c'),g=cv.getContext('2d'),W=280,H=456,P=Math.PI*2,$=id=>document.getElementById(id);
-let points=0,high=0,remaining=3,ball=null,over=false,left=false,right=false,multi=1,hits=0,hitClock=0,muted=false;
-try{high=+(localStorage.getItem('nexus-g32-hi')||0)}catch(e){}
-const bump=[{x:91,y:142,r:18,c:'#fa65c5'},{x:184,y:145,r:18,c:'#5addff'},{x:139,y:213,r:19,c:'#ffe177'}];
-const peg=[{x:50,y:239},{x:230,y:239},{x:74,y:282},{x:202,y:281},{x:139,y:300}];
-const walls=[[[18,64],[18,352]],[[18,352],[61,389]],[[262,64],[262,352]],[[262,352],[219,389]],[[48,51],[232,51]],[[48,51],[18,64]],[[232,51],[262,64]],[[51,337],[94,369]],[[229,337],[186,369]]];
-const tabs=[{x:54,y:85,lit:false},{x:99,y:77,lit:false},{x:145,y:77,lit:false},{x:190,y:85,lit:false}];
-const L={x:94,y:394,a:.4,rest:.4,on:-.55},R={x:186,y:394,a:Math.PI-.4,rest:Math.PI-.4,on:Math.PI+.55};
-let sparks=[],popups=[],audio,last=performance.now(),lag=0;
-function ping(f=450,d=.06){if(muted)return;try{audio=audio||new(window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();let o=audio.createOscillator(),v=audio.createGain();o.type='triangle';o.frequency.value=f;v.gain.setValueAtTime(.04,audio.currentTime);v.gain.exponentialRampToValueAtTime(.0001,audio.currentTime+d);o.connect(v);v.connect(audio.destination);o.start();o.stop(audio.currentTime+d)}catch(e){}}
-function score(n,x,y){points+=n*multi;popups.push({x,y,t:'+'+n*multi,time:48});hits++;hitClock=170;if(hits%8===0){multi=Math.min(5,multi+1);popups.push({x:136,y:260,t:'x'+multi+' BONUS',time:65})}if(points>high){high=points;try{localStorage.setItem('nexus-g32-hi',high)}catch(e){}}}
-function sparkle(x,y,c){for(let i=0;i<11;i++){let a=Math.random()*P,v=1+Math.random()*2;sparks.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,c,t:25})}}
-function ready(){ball={x:248,y:412,vx:0,vy:0,r:6,live:false,trail:[]}}
-function start(){points=0;remaining=3;multi=1;hits=0;hitClock=0;over=false;popups=[];sparks=[];tabs.forEach(t=>t.lit=false);ready()}
-function launch(){if(over){start();return}if(!ball)ready();if(!ball.live){ball.live=true;ball.vx=-2.2;ball.vy=-11.5;ping(660,.15)}}
-function flip(side,on){if(side==='l'){left=on;$('l').classList.toggle('on',on)}else{right=on;$('r').classList.toggle('on',on)}}
-for(const side of ['l','r']){let el=$(side);el.onpointerdown=e=>{e.preventDefault();el.setPointerCapture(e.pointerId);flip(side,true)};for(const type of ['pointerup','pointercancel','lostpointercapture'])el.addEventListener(type,()=>flip(side,false))}
-$('launch').onclick=launch;$('restart').onclick=start;$('sound').onclick=()=>{muted=!muted;$('sound').textContent=muted?'♫ OFF':'♫ ON'};
-window.onkeydown=e=>{if(['ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();if(e.code==='Space'&&!e.repeat)launch();if(['ArrowLeft','KeyA'].includes(e.code))flip('l',true);if(['ArrowRight','KeyD'].includes(e.code))flip('r',true)};
-window.onkeyup=e=>{if(['ArrowLeft','KeyA'].includes(e.code))flip('l',false);if(['ArrowRight','KeyD'].includes(e.code))flip('r',false)};
-window.onblur=()=>{flip('l',false);flip('r',false)};
-const activeTouches=new Map();cv.onpointerdown=e=>{e.preventDefault();cv.setPointerCapture(e.pointerId);if(over||!ball?.live){launch();return}const rect=cv.getBoundingClientRect(),x=(e.clientX-rect.left)*W/rect.width,y=(e.clientY-rect.top)*H/rect.height;if(y>220){let side=x<140?'l':'r';activeTouches.set(e.pointerId,side);flip(side,true)}};for(const t of ['pointerup','pointercancel','lostpointercapture'])cv.addEventListener(t,e=>{let side=activeTouches.get(e.pointerId);activeTouches.delete(e.pointerId);if(side)flip(side,[...activeTouches.values()].includes(side))});
-function wall(a,b,c,d,boost=0){let dx=c-a,dy=d-b,t=Math.max(0,Math.min(1,((ball.x-a)*dx+(ball.y-b)*dy)/(dx*dx+dy*dy))),px=a+t*dx,py=b+t*dy,ox=ball.x-px,oy=ball.y-py,dist=Math.hypot(ox,oy);if(dist>ball.r+1)return false;let nx=ox/(dist||1),ny=oy/(dist||1);ball.x+=nx*(ball.r+1-dist);ball.y+=ny*(ball.r+1-dist);let dot=ball.vx*nx+ball.vy*ny;if(dot<0){ball.vx-=1.75*dot*nx;ball.vy-=1.75*dot*ny}if(boost){ball.vy=Math.min(-5.5,ball.vy-boost);ball.vx+=nx*.9;ping(270,.04)}return true}
-function physics(){if(hitClock>0&&--hitClock===0){multi=1;hits=0}L.a+=( (left?L.on:L.rest)-L.a)*.38;R.a+=((right?R.on:R.rest)-R.a)*.38;sparks=sparks.filter(p=>--p.t>0);for(const p of sparks){p.x+=p.vx;p.y+=p.vy;p.vy+=.04}popups=popups.filter(p=>--p.time>0);for(const p of popups)p.y-=.35;
-if(!ball?.live)return;ball.vy+=.12;ball.x+=ball.vx;ball.y+=ball.vy;let speed=Math.hypot(ball.vx,ball.vy);if(speed>11){ball.vx*=11/speed;ball.vy*=11/speed}
-if(ball.y<57){ball.y=57;ball.vy=Math.abs(ball.vy)*.8}if(ball.x<24){ball.x=24;ball.vx=Math.abs(ball.vx)*.8}if(ball.x>256){ball.x=256;ball.vx=-Math.abs(ball.vx)*.8}
-for(const w of walls)wall(w[0][0],w[0][1],w[1][0],w[1][1]);
-for(const b of bump){let d=Math.hypot(ball.x-b.x,ball.y-b.y);if(d<b.r+ball.r){let nx=(ball.x-b.x)/(d||1),ny=(ball.y-b.y)/(d||1),v=Math.max(6.5,Math.hypot(ball.vx,ball.vy)*1.08);ball.x=b.x+nx*(b.r+ball.r+1);ball.y=b.y+ny*(b.r+ball.r+1);ball.vx=nx*v;ball.vy=ny*v;score(100,b.x,b.y);sparkle(b.x,b.y,b.c);ping(480+Math.random()*200)}}
-for(const p of peg){let d=Math.hypot(ball.x-p.x,ball.y-p.y),r=12;if(d<r){let nx=(ball.x-p.x)/(d||1),ny=(ball.y-p.y)/(d||1),v=ball.vx*nx+ball.vy*ny;ball.x=p.x+nx*r;ball.y=p.y+ny*r;if(v<0){ball.vx-=1.8*v*nx;ball.vy-=1.8*v*ny}}}
-for(const t of tabs){if(ball.x>t.x-6&&ball.x<t.x+31&&ball.y>t.y-6&&ball.y<t.y+13){if(!t.lit){t.lit=true;score(250,t.x,t.y);ping(850)}ball.vy=Math.abs(ball.vy)*.7;ball.y=t.y+13}}
-for(const [f,on] of [[L,left],[R,right]]){let ex=f.x+Math.cos(f.a)*49,ey=f.y+Math.sin(f.a)*49;if(wall(f.x,f.y,ex,ey,on?4.5:0)&&on){ball.vx+=(f===L?1:-1)*1.5}}
-if(tabs.every(t=>t.lit)){tabs.forEach(t=>t.lit=false);score(1000,140,101);sparkle(140,112,'#ffe277')}
-ball.trail.push([ball.x,ball.y]);if(ball.trail.length>9)ball.trail.shift();
-if(ball.y>465){remaining--;ping(125,.26);if(remaining>0)ready();else{ball=null;over=true}}}
-function draw(){g.fillStyle='#071026';g.fillRect(0,0,W,H);g.fillStyle='#0e203b';g.fillRect(0,0,W,46);g.fillStyle='#ecfcff';g.font='bold 14px system-ui';g.textAlign='left';g.fillText('G32 / NEON',12,18);g.font='11px monospace';g.fillStyle='#86dfff';g.fillText('SCORE '+points.toLocaleString(),12,35);g.textAlign='right';g.fillText('HI '+high.toLocaleString(),268,18);g.fillText('BALL '+remaining+'/3',268,35);
-g.strokeStyle='#15395c';g.lineWidth=.7;for(let y=60;y<423;y+=37){g.beginPath();g.moveTo(18,y);g.lineTo(263,y);g.stroke()}
-for(const w of walls){g.shadowColor='#42c3ff';g.shadowBlur=8;g.strokeStyle='#358fca';g.lineWidth=3;g.beginPath();g.moveTo(...w[0]);g.lineTo(...w[1]);g.stroke()}g.shadowBlur=0;
-for(const t of tabs){g.fillStyle=t.lit?'#78ffc2':'#815ad1';g.shadowColor=g.fillStyle;g.shadowBlur=10;g.fillRect(t.x,t.y,25,8)}g.shadowBlur=0;
-for(const b of bump){g.shadowColor=b.c;g.shadowBlur=20;g.fillStyle=b.c;g.beginPath();g.arc(b.x,b.y,b.r,0,P);g.fill();g.fillStyle='#142344';g.beginPath();g.arc(b.x,b.y,b.r-5,0,P);g.fill()}g.shadowBlur=0;
-for(const p of peg){g.fillStyle='#6bd8ff';g.beginPath();g.arc(p.x,p.y,5,0,P);g.fill()}
-for(const [f,col] of [[L,'#ff64be'],[R,'#54dfff']]){g.strokeStyle=col;g.shadowColor=col;g.shadowBlur=12;g.lineWidth=13;g.lineCap='round';g.beginPath();g.moveTo(f.x,f.y);g.lineTo(f.x+Math.cos(f.a)*49,f.y+Math.sin(f.a)*49);g.stroke()}g.shadowBlur=0;
-g.fillStyle='#92d8fe';g.font='11px system-ui';g.textAlign='center';g.fillText('×'+multi+' MULTIPLIER',140,326);
-if(ball){for(let i=0;i<ball.trail.length;i++){g.fillStyle='rgba(105,217,255,'+(i/ball.trail.length*.38)+')';let p=ball.trail[i];g.beginPath();g.arc(p[0],p[1],2+i/ball.trail.length*2.3,0,P);g.fill()}g.shadowColor='#aff3ff';g.shadowBlur=16;g.fillStyle='#f0ffff';g.beginPath();g.arc(ball.x,ball.y,ball.r,0,P);g.fill();g.shadowBlur=0}
-for(const p of sparks){g.globalAlpha=p.t/25;g.fillStyle=p.c;g.fillRect(p.x,p.y,3,3)}g.globalAlpha=1;for(const p of popups){g.globalAlpha=Math.min(1,p.time/20);g.fillStyle='#d5fbff';g.font='bold 12px system-ui';g.fillText(p.t,p.x,p.y)}g.globalAlpha=1;
-g.fillStyle='#112848';g.fillRect(0,429,W,27);g.fillStyle='#8adcf5';g.fillText('◀ FLIP                      FLIP ▶',140,446);
-if(ball&&!ball.live){g.fillStyle='#061126e5';g.fillRect(29,175,222,88);g.strokeStyle='#50b5dc';g.strokeRect(29,175,222,88);g.fillStyle='#e5fbff';g.font='bold 23px system-ui';g.fillText('READY?',140,207);g.fillStyle='#84dffa';g.font='12px system-ui';g.fillText('TAP LAUNCH TO PLAY',140,234)}
-if(over){g.fillStyle='#071021e8';g.fillRect(0,49,280,377);g.fillStyle='#ff7dc3';g.font='bold 27px system-ui';g.fillText('GAME OVER',140,185);g.fillStyle='#ecfdff';g.font='16px system-ui';g.fillText(points+' POINTS',140,218);g.fillStyle='#8be4f8';g.font='12px system-ui';g.fillText('LAUNCH TO RESTART',140,250)}}
-function frame(now){lag+=Math.min(.05,(now-last)/1000);last=now;let loops=0;while(lag>=1/60&&loops++<4){physics();lag-=1/60}draw();requestAnimationFrame(frame)}
-start();requestAnimationFrame(frame);
+const canvas=document.getElementById('game');const ctx=canvas.getContext('2d',{alpha:false});
+const W=600,H=840,R=9,FIXED=1/180,TAU=Math.PI*2;
+const $=id=>document.getElementById(id);
+const dom={score:$('score'),best:$('best'),balls:$('balls'),multi:$('multi'),targets:$('targets'),state:$('state'),nudges:$('nudges')};
+const palette={cyan:'#4fdaff',pink:'#ff55b6',yellow:'#ffd36d',green:'#78ffcb',purple:'#ad86ff'};
+let score=0,best=0,balls=3,level=1,bumperHits=0,targetCount=0,nudges=3,phase='ready',paused=false,mute=false;
+try{best=Number(localStorage.getItem('nexus-neon-pinball-best-v2'))||0}catch(e){}
+const bumpers=[{x:178,y:262,r:35,color:palette.pink,hit:-1},{x:367,y:251,r:35,color:palette.cyan,hit:-1},{x:273,y:387,r:39,color:palette.yellow,hit:-1}];
+const targets=[125,197,269,341,413].map((x,i)=>({x,y:167,lit:false,hit:-1,i}));
+const pegs=[{x:110,y:440,r:11},{x:455,y:433,r:11},{x:280,y:500,r:10},{x:145,y:562,r:8},{x:423,y:562,r:8}];
+const walls=[
+ [53,137,53,650],[53,650,108,693],
+ [514,137,514,649],[514,649,454,693],
+ [53,137,92,94],[92,94,481,94],[481,94,514,137],
+ [105,606,204,671],[359,671,462,606]
+];
+const L={px:181,py:744,len:100,angle:.19,rest:.19,up:-.65,held:false,stamp:-10,color:palette.pink};
+const RR={px:386,py:744,len:100,angle:Math.PI-.19,rest:Math.PI-.19,up:Math.PI+.65,held:false,stamp:-10,color:palette.cyan};
+let ball=null,effects=[],particles=[],tick=0,roundId=0,lastRender=performance.now(),acc=0,audio=null;
+let pointerFlips=new Map();
+function beep(freq=540,dur=.06,shape='sine'){
+ if(mute)return;
+ try{audio=audio||new(window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();
+ let osc=audio.createOscillator(),vol=audio.createGain();osc.type=shape;osc.frequency.value=freq;vol.gain.setValueAtTime(.035,audio.currentTime);vol.gain.exponentialRampToValueAtTime(.0001,audio.currentTime+dur);osc.connect(vol);vol.connect(audio.destination);osc.start();osc.stop(audio.currentTime+dur)}catch(e){}
+}
+function sync(){dom.score.textContent=score.toLocaleString();dom.best.textContent=best.toLocaleString();dom.balls.textContent=balls;dom.multi.textContent='×'+level;dom.targets.textContent=targetCount+' / 5';dom.nudges.textContent=nudges+' NUDGES';dom.state.textContent=paused?'PAUSED':phase==='over'?'GAME OVER':phase==='ready'?'READY TO LAUNCH':'BALL IN PLAY';$('pause').textContent=paused?'▶ RESUME':'Ⅱ PAUSE'}
+function addScore(v,x,y){const amount=v*level;score+=amount;effects.push({x,y,text:'+'+amount,time:1});if(score>best){best=score;try{localStorage.setItem('nexus-neon-pinball-best-v2',best)}catch(e){}}sync()}
+function sparks(x,y,color){for(let i=0;i<14;i++){let a=Math.random()*TAU,p=70+Math.random()*170;particles.push({x,y,vx:Math.cos(a)*p,vy:Math.sin(a)*p,life:.33+Math.random()*.18,c:color})}}
+function newBall(){ball={x:545,y:760,vx:0,vy:0,r:R,inLane:true,active:false,trail:[],idle:0};phase='ready';sync()}
+function restart(){score=0;balls=3;level=1;bumperHits=0;targetCount=0;nudges=3;phase='ready';paused=false;roundId=0;effects=[];particles=[];for(const t of targets){t.lit=false;t.hit=-10}for(const b of bumpers)b.hit=-10;newBall();sync()}
+function launch(){if(phase==='over'){restart()}if(paused){paused=false}if(phase==='ready'&&ball){ball.active=true;ball.inLane=true;ball.vy=-1630;ball.vx=0;ball.trail=[];phase='playing';roundId++;beep(640,.11,'sawtooth');sync()}}
+function drain(){if(!ball)return;ball=null;balls--;beep(145,.23,'triangle');if(balls>0)newBall();else{phase='over';sync()}}
+function nudge(){if(paused||phase!=='playing'||!ball||ball.inLane||nudges<1)return;nudges--;ball.vx+=(ball.x<280?190:-190);ball.vy-=360;ball.idle=0;sparks(ball.x,ball.y,palette.green);beep(210,.08);sync()}
+function flip(side,down){const f=side==='left'?L:RR;f.held=down;$(side).classList.toggle('down',down)}
+for(const id of ['left','right']){let el=$(id);el.addEventListener('pointerdown',e=>{e.preventDefault();el.setPointerCapture(e.pointerId);flip(id,true)});for(const type of ['pointerup','pointercancel','lostpointercapture'])el.addEventListener(type,()=>flip(id,false))}
+$('launch').addEventListener('click',launch);$('new').addEventListener('click',restart);$('nudge').addEventListener('click',nudge);$('sound').addEventListener('click',()=>{mute=!mute;$('sound').textContent=mute?'♫ SOUND OFF':'♫ SOUND ON'});$('pause').addEventListener('click',()=>{if(phase==='over')return;paused=!paused;sync()});
+window.addEventListener('keydown',e=>{if(['Space','ArrowLeft','ArrowRight','KeyA','KeyD','KeyN','KeyP'].includes(e.code))e.preventDefault();if(e.repeat)return;if(e.code==='Space')launch();if(['ArrowLeft','KeyA'].includes(e.code))flip('left',true);if(['ArrowRight','KeyD'].includes(e.code))flip('right',true);if(e.code==='KeyN')nudge();if(e.code==='KeyP'){$('pause').click()}});
+window.addEventListener('keyup',e=>{if(['ArrowLeft','KeyA'].includes(e.code))flip('left',false);if(['ArrowRight','KeyD'].includes(e.code))flip('right',false)});
+window.addEventListener('blur',()=>{flip('left',false);flip('right',false)});
+canvas.addEventListener('pointerdown',e=>{e.preventDefault();canvas.setPointerCapture(e.pointerId);const bounds=canvas.getBoundingClientRect(),x=(e.clientX-bounds.left)*W/bounds.width,y=(e.clientY-bounds.top)*H/bounds.height;if(phase!=='playing'){launch();return}if(y>410){const side=x<W/2?'left':'right';pointerFlips.set(e.pointerId,side);flip(side,true)}});
+for(const eventName of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(eventName,e=>{const side=pointerFlips.get(e.pointerId);pointerFlips.delete(e.pointerId);if(side)flip(side,[...pointerFlips.values()].includes(side))});
+function segment(ax,ay,bx,by,boost=1.0,onCollision=null){
+ let dx=bx-ax,dy=by-ay,denom=dx*dx+dy*dy,t=Math.max(0,Math.min(1,((ball.x-ax)*dx+(ball.y-ay)*dy)/denom)),px=ax+t*dx,py=ay+t*dy,nx=ball.x-px,ny=ball.y-py,dist=Math.hypot(nx,ny),min=ball.r+3;
+ if(dist>=min)return false;
+ if(dist<.001){nx=-dy;ny=dx;dist=Math.hypot(nx,ny)}nx/=dist;ny/=dist;
+ ball.x=px+nx*min;ball.y=py+ny*min;
+ let into=ball.vx*nx+ball.vy*ny;if(into<0){ball.vx-=1.7*into*nx;ball.vy-=1.7*into*ny;ball.vx*=boost;ball.vy*=boost;if(onCollision)onCollision(t)}
+ return true;
+}
+function pegBounce(x,y,r,boost=1){let dx=ball.x-x,dy=ball.y-y,dist=Math.hypot(dx,dy),limit=r+ball.r;if(dist>=limit)return false;let nx=dx/(dist||1),ny=dy/(dist||1);ball.x=x+nx*(limit+1);ball.y=y+ny*(limit+1);let v=ball.vx*nx+ball.vy*ny;if(v<0){ball.vx-=1.9*v*nx;ball.vy-=1.9*v*ny;ball.vx*=boost;ball.vy*=boost}return true}
+function flipper(f){const target=f.held?f.up:f.rest;f.angle+=(target-f.angle)*.22;let x=f.px+Math.cos(f.angle)*f.len,y=f.py+Math.sin(f.angle)*f.len;
+ segment(f.px,f.py,x,y,1,t=>{if(tick-f.stamp<15)return;f.stamp=tick;
+ if(f.held&&ball.y>f.py-105){ball.vy=-Math.max(800,Math.min(1140,Math.abs(ball.vy)*.82+420));ball.vx+=(f===L?1:-1)*(210+110*t);beep(380,.035,'square');sparks(ball.x,ball.y,f.color)}else if(ball.vy>0){ball.vy=Math.min(ball.vy,-190)}
+ })}
+function update(dt){tick++;
+ for(const f of [L,RR])f.angle+=((f.held?f.up:f.rest)-f.angle)*.22;
+ effects=effects.filter(e=>(e.time-=dt)>0);for(const e of effects)e.y-=34*dt;
+ particles=particles.filter(p=>(p.life-=dt)>0);for(const p of particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=380*dt}
+ if(phase!=='playing'||!ball||!ball.active)return;
+ const previousX=ball.x,previousY=ball.y;
+ ball.vy+=805*dt;ball.vx*=.9996;
+ let maxSpeed=1900,speed=Math.hypot(ball.vx,ball.vy);if(speed>maxSpeed){ball.vx*=maxSpeed/speed;ball.vy*=maxSpeed/speed}
+ ball.x+=ball.vx*dt;ball.y+=ball.vy*dt;
+ if(ball.inLane){
+  ball.x=Math.max(535,Math.min(557,ball.x));
+  if(ball.y<=114){ball.inLane=false;ball.x=486;ball.y=145;ball.vx=-310;ball.vy=180;sparks(ball.x,ball.y,palette.green);beep(950,.07)}
+  if(ball.y>860){drain()}return;
+ }
+ if(ball.y<100){ball.y=100;ball.vy=Math.abs(ball.vy)*.87}
+ if(ball.x<62){ball.x=62;ball.vx=Math.abs(ball.vx)*.88}
+ if(ball.x>505){ball.x=505;ball.vx=-Math.abs(ball.vx)*.88}
+ for(const w of walls){segment(w[0],w[1],w[2],w[3],1,w===walls[7]||w===walls[8]?()=>{ball.vy-=310;beep(290,.05)}:null)}
+ for(const b of bumpers){let hit=pegBounce(b.x,b.y,b.r,1.15);if(hit&&tick-b.hit>24){b.hit=tick;addScore(100,b.x,b.y);bumperHits++;if(bumperHits%7===0){level=Math.min(5,level+1);effects.push({x:277,y:295,text:'MULTIPLIER ×'+level,time:1.5})}sparks(b.x,b.y,b.color);beep(450+(b.x%150)*3,.045)}}
+ for(const p of pegs)pegBounce(p.x,p.y,p.r,1.04);
+ for(const t of targets){if(!t.lit&&Math.abs(ball.x-t.x)<19&&Math.abs(ball.y-t.y)<19){t.lit=true;targetCount++;addScore(250,t.x,t.y);sparkleTarget(t);beep(900,.07);if(targetCount===5){addScore(2000,265,230);targets.forEach(x=>x.lit=false);targetCount=0;level=Math.min(5,level+1);effects.push({x:270,y:232,text:'TARGET BANK +2000',time:1.5});beep(1120,.15)}sync()}}
+ flipper(L);flipper(RR);
+ let sp=Math.hypot(ball.vx,ball.vy);ball.idle=sp<50?ball.idle+dt:0;
+ if(ball.idle>1.1){ball.vy=-390;ball.vx=(ball.x<285?220:-220);ball.idle=0}
+ if(ball.y>854){drain();return}
+ if(tick%5===0){ball.trail.push({x:ball.x,y:ball.y});if(ball.trail.length>14)ball.trail.shift()}
+ if(Math.abs(ball.x-previousX)+Math.abs(ball.y-previousY)===0)ball.idle+=dt;
+}
+function sparkleTarget(t){sparks(t.x,t.y,palette.purple)}
+function glimmerCircle(x,y,r,color){ctx.save();ctx.shadowColor=color;ctx.shadowBlur=22;ctx.strokeStyle=color;ctx.lineWidth=5;ctx.beginPath();ctx.arc(x,y,r,0,TAU);ctx.stroke();ctx.shadowBlur=0;ctx.globalAlpha=.25;ctx.fillStyle=color;ctx.beginPath();ctx.arc(x,y,r-4,0,TAU);ctx.fill();ctx.restore()}
+function line(x1,y1,x2,y2,color,width=4,glow=12){ctx.save();ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle=color;ctx.lineWidth=width;ctx.shadowColor=color;ctx.shadowBlur=glow;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.restore()}
+function render(){
+ const g=ctx;
+ const grad=g.createLinearGradient(0,0,0,H);grad.addColorStop(0,'#091d36');grad.addColorStop(.5,'#060f26');grad.addColorStop(1,'#09152e');g.fillStyle=grad;g.fillRect(0,0,W,H);
+ g.fillStyle='#07142b';g.fillRect(34,84,550,720);
+ g.strokeStyle='#16365c';g.lineWidth=1;for(let y=102;y<815;y+=39){g.beginPath();g.moveTo(51,y);g.lineTo(579,y);g.stroke()};for(let x=65;x<573;x+=39){g.beginPath();g.moveTo(x,103);g.lineTo(x,812);g.stroke()}
+ g.fillStyle='#10284b';g.fillRect(0,0,W,84);g.strokeStyle='#3d8cac';g.lineWidth=2;g.beginPath();g.moveTo(0,83);g.lineTo(W,83);g.stroke();g.textAlign='left';g.font='900 30px system-ui';g.fillStyle=palette.cyan;g.fillText('NEON',20,38);g.fillStyle=palette.pink;g.fillText('PINBALL',117,38);g.font='bold 14px monospace';g.fillStyle='#a8d5f9';g.fillText('SCORE  '+score.toLocaleString(),21,65);g.textAlign='right';g.fillText('BALL '+balls+'   ×'+level,579,65);
+ g.fillStyle='#102f51';g.fillRect(522,176,49,620);line(522,176,522,795,palette.cyan,4,8);line(574,113,574,797,'#47759e',5,3);line(522,795,574,795,'#47759e',5,3);g.font='12px monospace';g.textAlign='center';g.save();g.translate(551,486);g.rotate(-Math.PI/2);g.fillStyle='#77aed9';g.fillText('LAUNCH LANE',0,0);g.restore();
+ for(const w of walls)line(...w,(w===walls[7]||w===walls[8])?palette.pink:palette.cyan,4,9);
+ for(const t of targets){g.fillStyle=t.lit?'#9fffe4':'#8557bf';g.shadowColor=t.lit?palette.green:palette.purple;g.shadowBlur=16;g.fillRect(t.x-18,t.y-10,36,20);g.shadowBlur=0;g.strokeStyle='#c3a8ff';g.lineWidth=2;g.strokeRect(t.x-18,t.y-10,36,20)}
+ for(const b of bumpers){glimmerCircle(b.x,b.y,b.r,b.color);g.save();g.fillStyle='#0c1a36';g.beginPath();g.arc(b.x,b.y,b.r-11,0,TAU);g.fill();g.shadowColor=b.color;g.shadowBlur=15;g.fillStyle=b.color;g.beginPath();g.arc(b.x,b.y,8,0,TAU);g.fill();g.restore()}
+ for(const p of pegs){glimmerCircle(p.x,p.y,p.r, palette.cyan)}
+ g.fillStyle='#db2f8a18';g.beginPath();g.moveTo(106,602);g.lineTo(207,668);g.lineTo(108,694);g.closePath();g.fill();
+ g.fillStyle='#23c6f618';g.beginPath();g.moveTo(461,602);g.lineTo(359,668);g.lineTo(457,694);g.closePath();g.fill();
+ for(const f of [L,RR]){let ex=f.px+Math.cos(f.angle)*f.len,ey=f.py+Math.sin(f.angle)*f.len;line(f.px,f.py,ex,ey,f.color,18,17);glimmerCircle(f.px,f.py,12,f.color)}
+ g.fillStyle='#061020';g.fillRect(0,813,W,27);g.textAlign='center';g.fillStyle='#5d9dc8';g.font='bold 12px system-ui';g.fillText('SAVE THE BALL WITH YOUR FLIPPERS',295,829);
+ if(ball){if(!ball.inLane){for(let i=0;i<ball.trail.length;i++){let p=ball.trail[i];g.globalAlpha=(i+1)/ball.trail.length*.28;g.fillStyle='#a2f5ff';g.beginPath();g.arc(p.x,p.y,2+i*.4,0,TAU);g.fill()}g.globalAlpha=1}
+  g.save();g.shadowColor='#b6ffff';g.shadowBlur=24;g.fillStyle='#f1ffff';g.beginPath();g.arc(ball.x,ball.y,ball.r,0,TAU);g.fill();g.restore()}
+ for(const e of effects){g.globalAlpha=Math.min(1,e.time*2);g.font='bold 18px system-ui';g.fillStyle='#c4ffea';g.textAlign='center';g.fillText(e.text,e.x,e.y)}g.globalAlpha=1;
+ for(const p of particles){g.globalAlpha=Math.min(1,p.life*2);g.fillStyle=p.c;g.fillRect(p.x,p.y,4,4)}g.globalAlpha=1;
+ if(phase==='ready'){g.fillStyle='#071329e7';g.fillRect(110,318,375,128);g.strokeStyle='#59c9ec';g.lineWidth=2;g.strokeRect(110,318,375,128);g.textAlign='center';g.fillStyle='#ecfaff';g.font='900 34px system-ui';g.fillText('READY TO PLAY?',295,360);g.font='bold 17px system-ui';g.fillStyle=palette.cyan;g.fillText('PRESS SPACE OR LAUNCH',295,393);g.font='13px system-ui';g.fillStyle='#aacce3';g.fillText('BALL STARTS IN THE RIGHT LANE',295,422)}
+ if(phase==='over'){g.fillStyle='#061122e9';g.fillRect(0,84,W,756);g.textAlign='center';g.fillStyle=palette.pink;g.font='900 54px system-ui';g.fillText('GAME OVER',300,350);g.fillStyle='#e4ffff';g.font='bold 28px system-ui';g.fillText(score.toLocaleString()+' POINTS',300,400);g.font='17px system-ui';g.fillStyle=palette.cyan;g.fillText('PRESS LAUNCH FOR NEW GAME',300,450)}
+ if(paused){g.fillStyle='#061122d9';g.fillRect(0,85,W,755);g.font='900 54px system-ui';g.fillStyle='#e4ffff';g.textAlign='center';g.fillText('PAUSED',300,414)}
+}
+function loop(time){let dt=Math.min(.04,(time-lastRender)/1000);lastRender=time;if(!paused){acc=Math.min(.1,acc+dt);let loops=0;while(acc>=FIXED&&loops++<12){update(FIXED);acc-=FIXED}}else acc=0;render();requestAnimationFrame(loop)}
+restart();requestAnimationFrame(loop);
+window.__pinballDebug={get:()=>({score,best,balls,phase,paused,ball:ball?{x:ball.x,y:ball.y,vx:ball.vx,vy:ball.vy,inLane:ball.inLane,active:ball.active}:null,level,nudges}),launch,restart,advance:(seconds)=>{for(let i=0;i<seconds/FIXED;i++)update(FIXED)},setBall:(x,y,vx,vy)=>{ball={x,y,vx,vy,r:R,inLane:false,active:true,trail:[],idle:0};phase='playing'},hold:(side,down)=>flip(side,down)};
 })();
-</script></body></html>
+</script>
+</body>
+</html>
