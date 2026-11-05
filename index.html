@@ -100,12 +100,37 @@ function segment(ax,ay,bx,by,boost=1.0,onCollision=null){
  return true;
 }
 function pegBounce(x,y,r,boost=1){let dx=ball.x-x,dy=ball.y-y,dist=Math.hypot(dx,dy),limit=r+ball.r;if(dist>=limit)return false;let nx=dx/(dist||1),ny=dy/(dist||1);ball.x=x+nx*(limit+1);ball.y=y+ny*(limit+1);let v=ball.vx*nx+ball.vy*ny;if(v<0){ball.vx-=1.9*v*nx;ball.vy-=1.9*v*ny;ball.vx*=boost;ball.vy*=boost}return true}
-function flipper(f){const target=f.held?f.up:f.rest;f.angle+=(target-f.angle)*.22;let x=f.px+Math.cos(f.angle)*f.len,y=f.py+Math.sin(f.angle)*f.len;
- segment(f.px,f.py,x,y,1,t=>{if(tick-f.stamp<15)return;f.stamp=tick;
- if(f.held&&ball.y>f.py-105){ball.vy=-Math.max(800,Math.min(1140,Math.abs(ball.vy)*.82+420));ball.vx+=(f===L?1:-1)*(210+110*t);beep(380,.035,'square');sparks(ball.x,ball.y,f.color)}else if(ball.vy>0){ball.vy=Math.min(ball.vy,-190)}
- })}
+// One flipper-angle update per fixed physics step. The ball collides
+// with a solid moving paddle, not a magic repeated push from below.
+function flipper(f){
+ const previous=f.angle;
+ f.angle+=((f.held?f.up:f.rest)-f.angle)*.21;
+ const omega=(f.angle-previous)/FIXED;
+ const dx=Math.cos(f.angle)*f.len,dy=Math.sin(f.angle)*f.len;
+ const t=Math.max(0,Math.min(1,((ball.x-f.px)*dx+(ball.y-f.py)*dy)/(f.len*f.len)));
+ const cx=f.px+t*dx,cy=f.py+t*dy;
+ const offsetX=ball.x-cx,offsetY=ball.y-cy;
+ const distance=Math.hypot(offsetX,offsetY),limit=ball.r+9;
+ if(distance>=limit)return;
+ if(offsetY>ball.r+3&&ball.y>f.py+4)return;
+ let nx,ny;
+ if(distance<.0001){nx=0;ny=-1}else{nx=offsetX/distance;ny=offsetY/distance}
+ ball.x=cx+nx*(limit+.15);ball.y=cy+ny*(limit+.15);
+ const sx=-dy*t*omega,sy=dx*t*omega;
+ const approach=(ball.vx-sx)*nx+(ball.vy-sy)*ny;
+ if(approach<0){const impulse=Math.min(1500,-approach*1.43);ball.vx+=impulse*nx;ball.vy+=impulse*ny}
+ // One deliberate hit per contact, with a short cooldown. The paddle
+ // stays raised as long as the button/key is held (no repeat-trigger bug).
+ if(f.held&&tick-f.stamp>18&&ball.y<f.py+19&&ball.vy>-570){
+   f.stamp=tick;
+   ball.vy=-Math.max(740,Math.min(1280,Math.abs(ball.vy)*.7+460));
+   ball.vx+=(f===L?1:-1)*(100+150*t);
+   sparks(ball.x,ball.y,f.color);beep(410,.035,'square');
+ }
+ const speed=Math.hypot(ball.vx,ball.vy);
+ if(speed>1740){ball.vx*=1740/speed;ball.vy*=1740/speed}
+}
 function update(dt){tick++;
- for(const f of [L,RR])f.angle+=((f.held?f.up:f.rest)-f.angle)*.22;
  effects=effects.filter(e=>(e.time-=dt)>0);for(const e of effects)e.y-=34*dt;
  particles=particles.filter(p=>(p.life-=dt)>0);for(const p of particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=380*dt}
  if(phase!=='playing'||!ball||!ball.active)return;
@@ -122,8 +147,27 @@ function update(dt){tick++;
  if(ball.x<62){ball.x=62;ball.vx=Math.abs(ball.vx)*.88}
  if(ball.x>505){ball.x=505;ball.vx=-Math.abs(ball.vx)*.88}
  for(const w of walls){segment(w[0],w[1],w[2],w[3],1,w===walls[7]||w===walls[8]?()=>{ball.vy-=310;beep(290,.05)}:null)}
- for(const b of bumpers){let hit=pegBounce(b.x,b.y,b.r,1.15);if(hit&&tick-b.hit>24){b.hit=tick;addScore(100,b.x,b.y);bumperHits++;if(bumperHits%7===0){level=Math.min(5,level+1);effects.push({x:277,y:295,text:'MULTIPLIER ×'+level,time:1.5})}sparks(b.x,b.y,b.color);beep(450+(b.x%150)*3,.045)}}
+ for(const b of bumpers){
+ const hit=pegBounce(b.x,b.y,b.r,1.14);
+ if(hit&&tick-b.hit>24){
+  b.hit=tick;addScore(b.points,b.x,b.y);bumperHits++;
+  combo=tick-lastBumperTick<230?combo+1:1;lastBumperTick=tick;
+  if(combo>=3){addScore(350,b.x,b.y-32);effects.push({x:b.x,y:b.y-54,text:'COMBO!',time:.9});combo=0}
+  if(bumperHits%7===0){level=Math.min(5,level+1);effects.push({x:277,y:315,text:'MULTIPLIER ×'+level,time:1.5})}
+  sparks(b.x,b.y,b.color);beep(450+(b.x%150)*3,.045)
+ }
+}
  for(const p of pegs)pegBounce(p.x,p.y,p.r,1.04);
+ for(const p of prizes){
+  const hit=pegBounce(p.x,p.y,p.r,1.12);
+  if(hit&&!p.lit){
+    p.lit=true;sparks(p.x,p.y,p.color);beep(940,.09);
+    if(p.kind==='points')addScore(p.points,p.x,p.y-24);
+    else if(p.kind==='multiplier'){level=Math.min(6,level+1);effects.push({x:p.x,y:p.y-25,text:'MULTIPLIER UP!',time:1.3});sync()}
+    else if(p.kind==='ball'){balls=Math.min(5,balls+1);effects.push({x:p.x,y:p.y-25,text:'EXTRA BALL!',time:1.3});sync()}
+    if(prizes.every(q=>q.lit)){addScore(5000,287,358);effects.push({x:287,y:327,text:'ALL PRIZES +5000!',time:1.6});prizes.forEach(q=>q.lit=false)}
+  }
+ }
  for(const t of targets){if(!t.lit&&Math.abs(ball.x-t.x)<19&&Math.abs(ball.y-t.y)<19){t.lit=true;targetCount++;addScore(250,t.x,t.y);sparkleTarget(t);beep(900,.07);if(targetCount===5){addScore(2000,265,230);targets.forEach(x=>x.lit=false);targetCount=0;level=Math.min(5,level+1);effects.push({x:270,y:232,text:'TARGET BANK +2000',time:1.5});beep(1120,.15)}sync()}}
  flipper(L);flipper(RR);
  let sp=Math.hypot(ball.vx,ball.vy);ball.idle=sp<50?ball.idle+dt:0;
@@ -145,7 +189,11 @@ function render(){
  g.fillStyle='#102f51';g.fillRect(522,176,49,620);line(522,176,522,795,palette.cyan,4,8);line(574,113,574,797,'#47759e',5,3);line(522,795,574,795,'#47759e',5,3);g.font='12px monospace';g.textAlign='center';g.save();g.translate(551,486);g.rotate(-Math.PI/2);g.fillStyle='#77aed9';g.fillText('LAUNCH LANE',0,0);g.restore();
  for(const w of walls)line(...w,(w===walls[7]||w===walls[8])?palette.pink:palette.cyan,4,9);
  for(const t of targets){g.fillStyle=t.lit?'#9fffe4':'#8557bf';g.shadowColor=t.lit?palette.green:palette.purple;g.shadowBlur=16;g.fillRect(t.x-18,t.y-10,36,20);g.shadowBlur=0;g.strokeStyle='#c3a8ff';g.lineWidth=2;g.strokeRect(t.x-18,t.y-10,36,20)}
- for(const b of bumpers){glimmerCircle(b.x,b.y,b.r,b.color);g.save();g.fillStyle='#0c1a36';g.beginPath();g.arc(b.x,b.y,b.r-11,0,TAU);g.fill();g.shadowColor=b.color;g.shadowBlur=15;g.fillStyle=b.color;g.beginPath();g.arc(b.x,b.y,8,0,TAU);g.fill();g.restore()}
+ for(const b of bumpers){glimmerCircle(b.x,b.y,b.r,b.color);g.save();g.fillStyle='#0c1a36';g.beginPath();g.arc(b.x,b.y,Math.max(4,b.r-9),0,TAU);g.fill();g.shadowColor=b.color;g.shadowBlur=15;g.fillStyle=b.color;g.beginPath();g.arc(b.x,b.y,6,0,TAU);g.fill();g.restore()}
+ for(const p of prizes){
+  g.save();g.globalAlpha=p.lit?.38:1;g.shadowColor=p.color;g.shadowBlur=p.lit?2:15;g.fillStyle=p.lit?'#29405b':p.color;g.beginPath();g.arc(p.x,p.y,p.r,0,TAU);g.fill();g.fillStyle='#08162d';g.beginPath();g.arc(p.x,p.y,p.r-4,0,TAU);g.fill();
+  g.globalAlpha=1;g.font='bold 10px system-ui';g.textAlign='center';g.fillStyle=p.lit?'#58728b':p.color;g.fillText(p.label,p.x,p.y-20);g.restore();
+ }
  for(const p of pegs){glimmerCircle(p.x,p.y,p.r, palette.cyan)}
  g.fillStyle='#db2f8a18';g.beginPath();g.moveTo(106,602);g.lineTo(207,668);g.lineTo(108,694);g.closePath();g.fill();
  g.fillStyle='#23c6f618';g.beginPath();g.moveTo(461,602);g.lineTo(359,668);g.lineTo(457,694);g.closePath();g.fill();
@@ -161,7 +209,7 @@ function render(){
 }
 function loop(time){let dt=Math.min(.04,(time-lastRender)/1000);lastRender=time;if(!paused){acc=Math.min(.1,acc+dt);let loops=0;while(acc>=FIXED&&loops++<12){update(FIXED);acc-=FIXED}}else acc=0;render();requestAnimationFrame(loop)}
 restart();requestAnimationFrame(loop);
-window.__pinballDebug={get:()=>({score,best,balls,phase,paused,ball:ball?{x:ball.x,y:ball.y,vx:ball.vx,vy:ball.vy,inLane:ball.inLane,active:ball.active}:null,level,nudges}),launch,restart,advance:(seconds)=>{for(let i=0;i<seconds/FIXED;i++)update(FIXED)},setBall:(x,y,vx,vy)=>{ball={x,y,vx,vy,r:R,inLane:false,active:true,trail:[],idle:0};phase='playing'},hold:(side,down)=>flip(side,down)};
+window.__pinballDebug={get:()=>({score,best,balls,phase,paused,ball:ball?{x:ball.x,y:ball.y,vx:ball.vx,vy:ball.vy,inLane:ball.inLane,active:ball.active}:null,level,nudges,flippers:{left:{angle:L.angle,held:L.held},right:{angle:RR.angle,held:RR.held}},prizes:prizes.map(p=>({label:p.label,lit:p.lit}))}),launch,restart,advance:(seconds)=>{for(let i=0;i<seconds/FIXED;i++)update(FIXED)},setBall:(x,y,vx,vy)=>{ball={x,y,vx,vy,r:R,inLane:false,active:true,trail:[],idle:0};phase='playing'},hold:(side,down)=>flip(side,down)};
 })();
 </script>
 </body>
