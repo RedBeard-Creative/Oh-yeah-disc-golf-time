@@ -123,7 +123,7 @@ function posOn(path,d){let leftDist=d;for(let i=0;i<path.distances.length;i++){c
 function attach(b,path,kind,side){b.modePath={path,at:0,kind,side,speed:kind==='u'?530:610};let p=posOn(path,0);b.x=p.x;b.y=p.y;b.vx=0;b.vy=0}
 function spawn(initial=false){const b=emptyBall();if(mode==='uloop'){attach(b,uRail,'u','left')}else{b.x=initial?128:170+Math.random()*230;b.y=142;b.vx=(Math.random()-.5)*240;b.vy=115}balls.push(b);return b}
 function ensureBall(){if(balls.length===0)spawn(true)}
-function dropBall(extra=false){if(extra){if(balls.length>=6){message('Six balls is the maximum.');return false}const cost=20+10*(balls.length-1);if(wallet-cost<MIN_CASH){message('Keep the $75 safety reserve. Score more to add a ball!');return false}cashChange(-cost)}spawn(false);updateUI();return true}
+function dropBall(extra=false){if(extra){if(balls.length>=6){message('Six balls is the maximum.');return false}const cost=20+10*(balls.length-1);if(wallet-cost<MIN_CASH){message('Keep the $75 safety reserve. Score more to add a ball!');return false}cashChange(-cost)}spawn(false);refreshShop();return true}
 function setback(){const upkeep=Math.max(2,Math.ceil(parts.reduce((v,p)=>v+types[p.kind].cost,0)/700)+(rails.left?2:0)+(rails.right?2:0));if(income<upkeep){const fee=Math.min(18,Math.max(1,upkeep-income));cashChange(-fee);notify('-$'+fee+' upkeep',295,462,COLORS.pink)}else if(income>upkeep*4){notify('PROFIT ROUND!',300,430,COLORS.green)}income=0;roundHits=0;savePending=true;reduceExtras()}
 function reduceExtras(){if(wallet<=100&&balls.length>1){balls=balls.slice(0,1);message('Low funds: extra balls removed, but your free ball stays.')}ensureBall()}
 function removeBall(index){balls.splice(index,1);setback();ensureBall();updateUI()}
