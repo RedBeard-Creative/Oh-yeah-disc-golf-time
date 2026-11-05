@@ -536,18 +536,101 @@ $('reset-round').onclick=()=>{balls=[];income=0;ensureBall();message('New round 
 $('sound').onclick=()=>{soundOn=!soundOn;$('sound').textContent=soundOn?'♫ SOUND ON':'♫ SOUND OFF'};
 $('clear-layout').onclick=()=>{if(!confirm('Sell ALL owned bumpers for partial refunds and remove both rails?'))return;for(const b of parts)cashChange(Math.round(types[b.kind].cost*.65));parts=[];for(const side of ['left','right'])if(rails[side]){cashChange(450);rails[side]=false}selected=null;movingId=null;save();refreshShop();message('Layout cleared and partial refunds issued.')};
 for(const [id,f] of [['left',left],['right',right]]){const el=$(id);el.onpointerdown=e=>{e.preventDefault();el.setPointerCapture(e.pointerId);f.hold=true};for(const evt of ['pointerup','pointercancel','lostpointercapture'])el.addEventListener(evt,()=>f.hold=false)}
-canvas.onpointerdown=e=>{e.preventDefault();canvas.setPointerCapture(e.pointerId);const bounds=canvas.getBoundingClientRect(),x=(e.clientX-bounds.left)*W/bounds.width,y=(e.clientY-bounds.top)*H/bounds.height;
- if(isBuild){const index=nearestPeg(x,y);
- if(index<0){message('Click one of the evenly spaced peg sockets.');return}
- if(customRailPending){if(!customRailPoints.includes(index))customRailPoints.push(index);
+
+function boardPoint(e){const r=canvas.getBoundingClientRect();return {x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height}}
+function applyZoom(){const box=$('boardbox');box.style.transform='translate('+panX+'px,'+panY+'px) scale('+zoom+')'}
+function placeAtPeg(index,shift=false){
+ if(index<0){message('Click an evenly spaced peg socket.');return}
+ if(customRailPending){
+  if(!customRailPoints.includes(index))customRailPoints.push(index);
   if(customRailPoints.length===2){
-   const price=railSpecs.custom.price;
-   if(wallet-price<MIN_CASH){customRailPoints=[];customRailPending=false;message('Not enough money for custom rail.')}
-   else{cashChange(-price);rails.custom=true;customRailPending=false;save();message('Custom rail built! It follows your two chosen sockets.')}
-  }else message('Custom rail: choose exit socket.');refreshShop();return
+   const cost=railSpecs.custom.price;
+   if(wallet-cost<MIN_CASH){customRailPoints=[];customRailPending=false;message('Not enough money for custom rail.')}
+   else{cashChange(-cost);rails.custom=true;customRailPending=false;save();message('Custom rail saved!')}
+  }else message('Click an exit peg to finish the rail.');
+  refreshShop();return;
  }
- selectPeg(index);return}
- const side=x<W/2?'left':'right';pointerMap.set(e.pointerId,side);(side==='left'?left:right).hold=true};
+ if(shift){
+  const b=parts.find(p=>p.index===index);
+  if(b){if(selectedIds.has(b.id))selectedIds.delete(b.id);else selectedIds.add(b.id);selected=b.id;message(selectedIds.size+' bumpers selected');refreshShop()}return;
+ }
+ selectPeg(index)
+}
+canvas.onpointerdown=e=>{
+ e.preventDefault();
+ const pt=boardPoint(e);
+ if(e.button===1){
+  dragging={type:'pan',startX:e.clientX,startY:e.clientY,x:panX,y:panY};
+  canvas.setPointerCapture(e.pointerId);return
+ }
+ if(isBuild){
+  const index=nearestPeg(pt.x,pt.y);
+  if(index<0)return;
+  dragging={type:'table',index,x:e.clientX,y:e.clientY,shift:e.shiftKey,moved:false,visited:new Set()};
+  canvas.setPointerCapture(e.pointerId);
+  if(brushMode&&!e.shiftKey&&!parts.some(p=>p.index===index)){placeAtPeg(index);dragging.visited.add(index)}
+  return
+ }
+ const side=pt.x<W/2?'left':'right';pointerMap.set(e.pointerId,side);(side==='left'?left:right).hold=true;
+ canvas.setPointerCapture(e.pointerId)
+};
+canvas.addEventListener('pointermove',e=>{
+ lastMouse=boardPoint(e);
+ if(!dragging)return;
+ if(dragging.type==='pan'){panX=dragging.x+e.clientX-dragging.startX;panY=dragging.y+e.clientY-dragging.startY;applyZoom();return}
+ if(dragging.type==='table'&&isBuild){
+  if(Math.hypot(e.clientX-dragging.x,e.clientY-dragging.y)>10)dragging.moved=true;
+  if(brushMode){const idx=nearestPeg(lastMouse.x,lastMouse.y);
+   if(idx>=0&&!dragging.visited.has(idx)){dragging.visited.add(idx);if(!parts.some(p=>p.index===idx))placeAtPeg(idx)}
+  }
+ }
+});
+canvas.addEventListener('pointerup',e=>{
+ if(!dragging)return;
+ if(dragging.type==='table'&&isBuild){
+  const pt=boardPoint(e),index=nearestPeg(pt.x,pt.y);
+  if(!brushMode){
+   const original=parts.find(p=>p.index===dragging.index);
+   if(dragging.moved&&original&&index>=0&&index!==dragging.index&&canBuild(index,original.kind,original.id)){
+    original.index=index;selected=original.id;save();refreshShop();message('Moved bumper to peg '+pegGrid[index].key);
+   }else if(index>=0)placeAtPeg(index,dragging.shift);
+  }
+ }
+ dragging=null
+});
+canvas.addEventListener('pointercancel',()=>dragging=null);
+canvas.addEventListener('wheel',e=>{if(!isBuild)return;e.preventDefault();zoom=clamp(zoom+(e.deltaY<0?.12:-.12),1,2);if(zoom===1){panX=0;panY=0}applyZoom()},{passive:false});
+canvas.addEventListener('contextmenu',e=>{
+ e.preventDefault();if(!isBuild)return;
+ const pt=boardPoint(e),index=nearestPeg(pt.x,pt.y),part=parts.find(p=>p.index===index);
+ if(!part)return;selected=part.id;selectedIds.clear();refreshShop();
+ const menu=$('context-menu');menu.hidden=false;
+ menu.style.left=Math.max(5,Math.min(e.clientX,window.innerWidth-164))+'px';
+ menu.style.top=Math.max(5,Math.min(e.clientY,window.innerHeight-180))+'px'
+});
+for(const [id,target] of [['ctx-up','upgrade'],['ctx-move','move'],['ctx-sell','sell']]){
+ $(id).onclick=()=>{$('context-menu').hidden=true;$(target).click()}
+}
+$('ctx-info').onclick=()=>{const b=selectedPart();if(b){const t=types[b.kind];message(t.name+' L'+b.level+': '+t.desc+' · $'+(t.points*b.level)+'/hit');showMenu(true)}$('context-menu').hidden=true};
+document.addEventListener('pointerdown',e=>{if(!$('context-menu').contains(e.target))$('context-menu').hidden=true});
+for(const el of document.querySelectorAll('#bumper-shop .shop-item')){
+ el.addEventListener('pointerdown',e=>{if(e.button!==0)return;dragging={type:'shop',kind:el.dataset.kind,startX:e.clientX,startY:e.clientY}});
+}
+window.addEventListener('pointermove',e=>{
+ if(!dragging||dragging.type!=='shop')return;
+ const ghost=$('drag-ghost');ghost.hidden=false;ghost.style.left=e.clientX+'px';ghost.style.top=e.clientY+'px'
+});
+window.addEventListener('pointerup',e=>{
+ if(!dragging||dragging.type!=='shop')return;
+ const r=canvas.getBoundingClientRect();
+ if(e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom){
+  const p=boardPoint(e),index=nearestPeg(p.x,p.y);
+  selectedKind=dragging.kind;if(!isBuild)toggleBuild(true);
+  if(index>=0)placeAtPeg(index);
+  refreshShop()
+ }
+ $('drag-ghost').hidden=true;dragging=null
+});
 for(const evt of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(evt,e=>{const side=pointerMap.get(e.pointerId);pointerMap.delete(e.pointerId);if(side)(side==='left'?left:right).hold=[...pointerMap.values()].includes(side)});
 window.addEventListener('keydown',e=>{if(/^Digit[1-8]$/.test(e.code)&&!e.repeat){const key=e.code.slice(-1),id=Object.keys(machineSpecs).find(x=>machineSpecs[x].key===key);if(id)machineAction(id)}if(['Space','ArrowLeft','ArrowRight','KeyA','KeyD','KeyM','KeyB','KeyF'].includes(e.code))e.preventDefault();if(e.code==='Space'&&!e.repeat)dropBall(true);
  if(e.code==='KeyA'||e.code==='ArrowLeft')left.hold=true;if(e.code==='KeyD'||e.code==='ArrowRight')right.hold=true;
@@ -599,8 +682,14 @@ if(mode==='tower'||mode==='twins'||ownedMachines.emergency){
  g.globalAlpha=ball.type==='ghost'?.65:1;g.beginPath();g.arc(ball.x,ball.y,ball.r,0,TAU);g.fill();g.restore()}
  for(const p of particles){g.save();g.globalAlpha=clamp(p.t*2,0,1);g.fillStyle=p.c;g.fillRect(p.x,p.y,4,4);g.restore()}
  for(const p of popups){g.save();g.globalAlpha=clamp(p.time*2,0,1);g.textAlign='center';g.fillStyle=p.c;g.font='bold 12px system-ui';g.fillText(p.t,p.x,p.y);g.restore()}
- g.textAlign='center';g.fillStyle='#84c6e8';g.font='bold 11px system-ui';g.fillText('BALLS '+balls.length+'  ·  CASH $'+wallet,290,818);
- if(isBuild){g.fillStyle='#08243eb8';g.fillRect(63,140,441,40);g.fillStyle=COLORS.green;g.font='bold 16px system-ui';g.textAlign='center';g.fillText('BUILD: TAP A PEG SOCKET',282,166)}
+ if(previewMode&&isBuild&&lastMouse){
+ g.save();g.strokeStyle=COLORS.green;g.lineWidth=2;g.setLineDash([7,5]);g.beginPath();
+ const x=lastMouse.x,y=lastMouse.y;g.moveTo(x,y);for(let step=1;step<=20;step++){const t=step*.11;g.lineTo(x+60*t,y-310*t+455*t*t)}g.stroke();g.setLineDash([]);g.restore()
+}
+g.textAlign='center';g.fillStyle='#84c6e8';g.font='bold 11px system-ui';g.fillText('BALLS '+balls.length+'  ·  CASH $'+wallet,290,818);
+ if(isBuild){
+ for(const id of selectedIds){const b=parts.find(p=>p.id===id);if(b){const q=pegGrid[b.index];circle(q.x,q.y,types[b.kind].r+12,COLORS.gold,false)}}
+ g.fillStyle='#08243eb8';g.fillRect(63,140,441,40);g.fillStyle=COLORS.green;g.font='bold 16px system-ui';g.textAlign='center';g.fillText('BUILD: TAP A PEG SOCKET',282,166)}
 }
 function step(dt){
  clock+=dt;tick++;phaseTimer+=dt;
