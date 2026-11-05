@@ -31,7 +31,12 @@ h1{font-size:20px;color:#8feeff;letter-spacing:.06em;margin:1px 0 5px}h2{font-si
 .modegrid,.shopgrid,.actiongrid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}
 .modegrid{grid-template-columns:repeat(2,1fr)}
 .btn,.mode,.shop-item{color:#e5faff;border:1px solid #3d759c;border-radius:9px;background:#133451;padding:10px 8px}
-.mode{font-size:11px;min-height:48px}.mode.active,.shop-item.active{border-color:#8affdd;background:#215c65}
+.mode{font-size:11px;min-height:64px;position:relative;line-height:1.35;text-align:left;padding-left:12px;transition:background .12s,border-color .12s}
+.mode small.map-cost{display:block;color:#afc9d9;font-size:10px;margin-top:5px}
+.mode.locked{background:#0d1a2b;border-color:#334a64;color:#94a9bd}
+.mode.locked small.map-cost{color:#ffd5a0}
+.mode.unlocked{background:#12394b;border-color:#3e758f}
+.mode.active,.shop-item.active{border-color:var(--theme-accent,#8affdd);background:#215c65;box-shadow:inset 0 0 22px #2d949943}
 .shopgrid{grid-template-columns:repeat(2,1fr)}
 .shop-item{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-height:75px;text-align:left}
 .shop-item b{font-size:12px}.shop-item small{font-size:10px;color:#a0c2d8}.shop-item em{font-style:normal;color:#a0ffdc;font-size:11px}
@@ -69,8 +74,9 @@ h1{font-size:20px;color:#8feeff;letter-spacing:.06em;margin:1px 0 5px}h2{font-si
  <div class="panel-title"><div><div class="eyebrow">NEXUS ARCADE · G32</div><h1>PINBALL TYCOON MEGA</h1></div><button id="close" class="close">✕</button></div>
  <div class="statgrid"><div class="stat"><span>SCORE</span><strong id="score">0</strong></div><div class="stat"><span>BEST</span><strong id="best">0</strong></div><div class="stat"><span>BALLS ACTIVE</span><strong id="active-balls">1</strong></div><div class="stat"><span>ROUND INCOME</span><strong id="income">$0</strong></div><div class="stat"><span>TABLE VALUE</span><strong id="table-value">$0</strong></div></div>
  <div id="message">Earn slowly. Build the table you want.</div>
- <h2>Table style</h2>
- <div class="modegrid" id="map-grid"></div><p class="small" id="map-description">Seven completely different physics layouts.</p>
+ <h2>World map · earn new tables</h2>
+ <div class="modegrid" id="map-grid"></div><p class="small" id="map-description">Begin at MAP01. Earn coins to unlock the other six worlds.</p>
+ <p class="small" id="map-progress"></p>
  <h2>Bumper shop — snap to pegs</h2>
  <div class="shopgrid" id="bumper-shop"></div>
  <h2>Ball lab — choose the next ball</h2>
@@ -131,13 +137,13 @@ const ballTypes={
  gold:{name:'Golden',icon:'★',cost:120,color:'#ffe085',desc:'Earns bonus cash on hits',gravity:1,bounce:1.06,r:8}
 };
 const maps={
- uloop:{title:'MAP01 · Gravity U Deluxe',desc:'The ball rises, sweeps across the roof and drops down through a guided gravity-U. New bumper sockets cover the central field.'},
- spiral:{title:'MAP02 · Spiral Madness',desc:'A launching spiral guides the ball through a sweeping circular path before releasing it.'},
- eight:{title:'MAP03 · Infinity Eight',desc:'Two interwoven loops sweep through the middle before the ball enters the playfield.'},
- hourglass:{title:'MAP04 · Hourglass',desc:'Wide chambers joined by a narrow gate; angled walls funnel the ball through the middle.'},
- orbital:{title:'MAP05 · Orbital Station',desc:'Gravity curves toward a central gravity well, bending ball trajectories into orbits.'},
- twins:{title:'MAP06 · Twin Tables',desc:'Two mirrored zones, separate upper flippers and a central gate.'},
- tower:{title:'MAP07 · Gravity Tower',desc:'A tall obstacle tower with three flipper levels and stage-to-stage passages.'}
+ uloop:{title:'MAP01 · Gravity U Deluxe',short:'Neon Foundry',icon:'✦',unlock:0,desc:'The starter machine: a guided upside-down U, central bumpers and open construction sockets.',colors:['#061b32','#0b2945','#091124'],accent:'#60ddf1',secondary:'#ff72bf',scenery:'foundry'},
+ spiral:{title:'MAP02 · Spiral Madness',short:'Summer Sky',icon:'☀',unlock:650,desc:'Earn $650 to open the bright summer table, featuring faded clouds and a spiraling launch rail.',colors:['#2f6c94','#608ca2','#244b77'],accent:'#fff0a4',secondary:'#80e6f3',scenery:'summer'},
+ eight:{title:'MAP03 · Infinity Eight',short:'Twilight Fair',icon:'∞',unlock:1400,desc:'Violet carnival lights, a figure-eight launch and extra room for inventive bumper chains.',colors:['#2b153d','#663a68','#241437'],accent:'#fb92c9',secondary:'#ffe28a',scenery:'carnival'},
+ hourglass:{title:'MAP04 · Hourglass',short:'Desert Circuit',icon:'⌛',unlock:2750,desc:'A sandy copper playfield with subdued dunes and two narrowing hourglass barriers.',colors:['#715033','#a47750','#44332f'],accent:'#ffd18d',secondary:'#a4e7e3',scenery:'desert'},
+ orbital:{title:'MAP05 · Orbital Station',short:'Nebula Orbit',icon:'◉',unlock:4800,desc:'Deep-space stars and planets with a genuine inward gravity-well force.',colors:['#121331','#292657','#0b132c'],accent:'#b4a4ff',secondary:'#76dfff',scenery:'space'},
+ twins:{title:'MAP06 · Twin Tables',short:'Cyber District',icon:'▣',unlock:7600,desc:'Two split city lanes, pale green holographic buildings and extra upper flippers.',colors:['#082f36','#155a60','#071e2b'],accent:'#8fffd7',secondary:'#6fd6ff',scenery:'city'},
+ tower:{title:'MAP07 · Gravity Tower',short:'Frostpeak',icon:'▲',unlock:11500,desc:'An icy mountain table with elevated flipper platforms and tiered walls.',colors:['#183f65','#55849b','#132e57'],accent:'#b9efff',secondary:'#d0c7ff',scenery:'frost'}
 };
 const mapNames=Object.keys(maps);
 const railSpecs={
@@ -171,7 +177,7 @@ const uPath=[[112,675],[108,540],[108,392],[108,244],[133,164],[225,110],[352,11
 let wallet=280,score=0,best=0,income=0,roundHits=0,mode='uloop',isBuild=false,selectedKind='basic',selected=null,
   movingId=null,parts=[],rails={left:false,right:false},idCounter=1,balls=[],tick=0,clock=0,pausedByMenu=false,
   pointerMap=new Map(),particles=[],popups=[],soundOn=true,ctxAudio=null,statsLog=[],railCooldown=0,phaseTimer=0,spawnCooldown=0;
-let chosenBall='steel',mapUnlocks={},railPathsExtra={},customRailPoints=[],customRailPending=false,railDiverter=false,ownedMachines={},machineCooldowns={},activeSwitchUntil=0,magnetPulseUntil=0,incomeMultiplierUntil=0,comboHits=0,comboUntil=0,contractsDone=0,totalHits=0,totalRailTrips=0,researchLevel=0,prestigeLevel=0;
+let chosenBall='steel',mapUnlocks={uloop:true},railPathsExtra={},customRailPoints=[],customRailPending=false,railDiverter=false,ownedMachines={},machineCooldowns={},activeSwitchUntil=0,magnetPulseUntil=0,incomeMultiplierUntil=0,comboHits=0,comboUntil=0,contractsDone=0,totalHits=0,totalRailTrips=0,researchLevel=0,prestigeLevel=0;
 let blueprints=[null,null,null],selectedIds=new Set(),brushMode=false,previewMode=false,zoom=1,panX=0,panY=0,dragging=null,dragMoved=false,lastMouse=null,drawPath=[],rampCharge=0,shortcutReady=0,scoreByKind={},tempRailSwitch=false;
 let savePending=false;
 const left={x:195,y:734,len:95,rest:.19,up:-.62,a:.19,omega:0,hold:false},right={x:382,y:734,len:95,rest:Math.PI-.19,up:Math.PI+.62,a:Math.PI-.19,omega:0,hold:false};
@@ -182,13 +188,18 @@ const upperFlippers=[
 const storageKey='nexus-pinball-tycoon-v2';
 function save(){try{localStorage.setItem(storageKey,JSON.stringify({
  wallet,score,best,mode,parts:parts.map(b=>({id:b.id,index:b.index,kind:b.kind,level:b.level})),rails,idCounter,
- chosenBall,ownedMachines,researchLevel,prestigeLevel,contractsDone,totalHits,totalRailTrips,blueprints,scoreByKind,
+ chosenBall,mapUnlocks,ownedMachines,researchLevel,prestigeLevel,contractsDone,totalHits,totalRailTrips,blueprints,scoreByKind,
  customRailPoints
  }))}catch(e){}}
 function load(){try{const d=JSON.parse(localStorage.getItem(storageKey)||'null');if(!d)return;
  wallet=Number.isFinite(d.wallet)?Math.max(MIN_CASH,Math.floor(d.wallet)):wallet;
  best=Number.isFinite(d.best)?d.best:best;score=Number.isFinite(d.score)?d.score:score;
  mode=maps[d.mode]?d.mode:d.mode==='flip'?'orbital':d.mode==='classic'?'uloop':'uloop';
+ mapUnlocks={uloop:true};
+ if(d.mapUnlocks&&typeof d.mapUnlocks==='object'){
+   for(const k of mapNames)if(d.mapUnlocks[k]===true)mapUnlocks[k]=true;
+ }else if(d.mode&&maps[d.mode]){mapUnlocks[d.mode]=true}
+ if(!mapUnlocks[mode])mode='uloop';
  rails=Object.fromEntries(Object.keys(railSpecs).map(k=>[k,!!d.rails?.[k]]));
  chosenBall=ballTypes[d.chosenBall]?d.chosenBall:'steel';
  if(Array.isArray(d.parts)){for(const b of d.parts.slice(0,26)){
@@ -206,7 +217,7 @@ function load(){try{const d=JSON.parse(localStorage.getItem(storageKey)||'null')
 
 function initCatalog(){
  $('map-grid').innerHTML=Object.entries(maps).map(([id,m],i)=>
- '<button class="mode" data-mode="'+id+'"><b>MAP0'+(i+1)+'</b><br>'+m.title.split(' · ')[1]+'</button>').join('');
+ '<button class="mode" data-mode="'+id+'"><b>'+m.icon+' MAP0'+(i+1)+'</b><br>'+m.short+'<small class="map-cost"></small></button>').join('');
  $('bumper-shop').innerHTML=Object.entries(types).map(([kind,t])=>
  '<button class="shop-item" data-kind="'+kind+'" title="'+t.desc+'"><b>'+t.icon+' '+t.name+'</b><small>'+t.desc+'</small><em>$'+t.cost.toLocaleString()+' · +$'+t.points+'/hit</em></button>').join('');
  $('ball-shop').innerHTML=Object.entries(ballTypes).map(([kind,t])=>
