@@ -124,9 +124,9 @@ function attach(b,path,kind,side){b.modePath={path,at:0,kind,side,speed:kind==='
 function spawn(initial=false){const b=emptyBall();if(mode==='uloop'){attach(b,uRail,'u','left')}else{b.x=initial?128:170+Math.random()*230;b.y=142;b.vx=(Math.random()-.5)*240;b.vy=115}balls.push(b);return b}
 function ensureBall(){if(balls.length===0)spawn(true)}
 function dropBall(extra=false){if(extra){if(balls.length>=6){message('Six balls is the maximum.');return false}const cost=20+10*(balls.length-1);if(wallet-cost<MIN_CASH){message('Keep the $75 safety reserve. Score more to add a ball!');return false}cashChange(-cost)}spawn(false);refreshShop();return true}
-function setback(){const upkeep=Math.max(2,Math.ceil(parts.reduce((v,p)=>v+types[p.kind].cost,0)/700)+(rails.left?2:0)+(rails.right?2:0));if(income<upkeep){const fee=Math.min(18,Math.max(1,upkeep-income));cashChange(-fee);notify('-$'+fee+' upkeep',295,462,COLORS.pink)}else if(income>upkeep*4){notify('PROFIT ROUND!',300,430,COLORS.green)}income=0;roundHits=0;savePending=true;reduceExtras()}
+function setback(){const upkeep=Math.max(2,Math.ceil(parts.reduce((v,p)=>v+types[p.kind].cost,0)/700)+(rails.left?2:0)+(rails.right?2:0));if(income<upkeep){const fee=Math.min(18,Math.max(1,upkeep-income));cashChange(-fee);notify('-$'+fee+' upkeep',295,462,COLORS.pink);if(balls.length>1){balls.pop();notify('LOST EXTRA BALL',310,500,COLORS.pink)}}else if(income>upkeep*4){notify('PROFIT ROUND!',300,430,COLORS.green)}income=0;roundHits=0;savePending=true;reduceExtras()}
 function reduceExtras(){if(wallet<=100&&balls.length>1){balls=balls.slice(0,1);message('Low funds: extra balls removed, but your free ball stays.')}ensureBall()}
-function removeBall(index){balls.splice(index,1);setback();ensureBall();updateUI()}
+function removeBall(index){balls.splice(index,1);setback();ensureBall();refreshShop()}
 function floorRay(){return mode==='flip'?Math.sin(phaseTimer*.28):0}
 function gravity(b){if(mode==='flip'){const a=phaseTimer*.24;return {x:Math.sin(a)*730,y:Math.cos(a)*730}}return {x:0,y:910}}
 function updateFlippers(dt){for(const f of [left,right]){const target=f.hold?f.up:f.rest;const delta=clamp(target-f.a,-11.5*dt,11.5*dt);f.a+=delta;f.omega=delta/dt}}
@@ -164,7 +164,15 @@ function flipperBall(b,f){const dx=Math.cos(f.a)*f.len,dy=Math.sin(f.a)*f.len;
  if(into<0){const impulse=clamp(-(1+1.12)*into,0,1550);b.vx+=impulse*nx;b.vy+=impulse*ny;
  if(Math.abs(f.omega)>1&&f.hold){b.vy=Math.min(b.vy,-640);b.vx+=(f===left?1:-1)*80;sound(310,.03)}}
 }
-function advancePath(b,dt){const ride=b.modePath;if(!ride)return false;ride.at+=ride.speed*dt;const p=posOn(ride.path,ride.at);b.x=p.x;b.y=p.y;if(ride.kind==='u'){b.gravityDirection=p.dx>0.5?'RIGHT':p.dy<-.4?'UP':'DOWN'}if(ride.at>=ride.path.total){b.modePath=null;b.x=p.x;b.y=p.y;b.vx=p.dx*490-(ride.kind==='u'?260:40);b.vy=Math.max(130,p.dy*480);
+function advancePath(b,dt){const ride=b.modePath;if(!ride)return false;
+ const before=ride.at;ride.at+=ride.speed*dt;
+ if(ride.kind==='rail'){
+  for(const marker of [.24,.43,.62,.81]){
+   const threshold=ride.path.total*marker;
+   if(before<threshold&&ride.at>=threshold){const spot=posOn(ride.path,threshold);addPoints(160,1,spot.x,spot.y,COLORS.purple);sound(820,.035)}
+  }
+ }
+ const p=posOn(ride.path,ride.at);b.x=p.x;b.y=p.y;if(ride.kind==='u'){b.gravityDirection=p.dx>0.5?'RIGHT':p.dy<-.4?'UP':'DOWN'}if(ride.at>=ride.path.total){b.modePath=null;b.x=p.x;b.y=p.y;b.vx=p.dx*490-(ride.kind==='u'?260:40);b.vy=Math.max(130,p.dy*480);
  if(ride.kind==='rail'){const reward=15;cashChange(reward);income+=reward;addPoints(1800,0,b.x,b.y,COLORS.gold);notify('RAIL PRIZE +$'+reward,b.x,b.y-32,COLORS.gold);sound(1030,.16)}
  return true}return true}
 function tryRail(b){if(b.rail||b.modePath||clock<railCooldown)return;
@@ -267,7 +275,7 @@ function render(){
  for(const socket of pegGrid){g.fillStyle='#335876';g.beginPath();g.arc(socket.x,socket.y,5,0,TAU);g.fill();if(isBuild){g.strokeStyle='#4f8dbf';g.lineWidth=1;g.beginPath();g.arc(socket.x,socket.y,10,0,TAU);g.stroke()}}
  for(const b of starter)drawBumper(b.x,b.y,b.kind,1);
  for(const part of parts){const p=pegGrid[part.index];drawBumper(p.x,p.y,part.kind,part.level);if(isBuild&&selected===part.id){circle(p.x,p.y,types[part.kind].r+8,'#fff',false)}}
- for(const side of ['left','right']){const x=side==='left'?75:491,y=497;g.save();g.globalAlpha=rails[side]?1:.35;circle(x,y,15,rails[side]?COLORS.gold:COLORS.blue);g.textAlign='center';g.fillStyle=COLORS.gold;g.font='11px system-ui';g.fillText('RAIL',x,535);if(rails[side]){polyline(railPaths[side],COLORS.gold,3);for(let i=3;i<railPaths[side].length-1;i+=2){const p=railPaths[side][i];circle(p[0],p[1],9,COLORS.purple)}}g.restore()}
+ for(const side of ['left','right']){const x=side==='left'?75:491,y=497;g.save();g.globalAlpha=rails[side]?1:.35;circle(x,y,15,rails[side]?COLORS.gold:COLORS.blue);g.textAlign='center';g.fillStyle=COLORS.gold;g.font='11px system-ui';g.fillText('RAIL',x,535);if(rails[side]){polyline(railPaths[side],COLORS.gold,3);for(const marker of [.24,.43,.62,.81]){const p=posOn(side==='left'?leftRail:rightRail,(side==='left'?leftRail:rightRail).total*marker);circle(p.x,p.y,9,COLORS.purple)}}g.restore()}
  circle(294,379,16,COLORS.gold);g.fillStyle=COLORS.gold;g.textAlign='center';g.font='bold 10px system-ui';g.fillText('RAIL PRIZE',294,411);
  polyline([[60,653],[132,707]],COLORS.pink,4);polyline([[508,653],[433,707]],COLORS.blue,4);
  for(const [f,color] of [[left,COLORS.pink],[right,COLORS.blue]]){const tx=f.x+Math.cos(f.a)*f.len,ty=f.y+Math.sin(f.a)*f.len;neonLine(f.x,f.y,tx,ty,color,17);circle(f.x,f.y,9,color)}
