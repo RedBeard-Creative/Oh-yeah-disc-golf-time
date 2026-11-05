@@ -172,6 +172,15 @@ $('fullscreen-button').addEventListener('click',async()=>{try{if(document.fullsc
 document.addEventListener('fullscreenchange',()=>$('fullscreen-button').textContent=document.fullscreenElement?'⤢':'⛶');
 window.addEventListener('keydown',e=>{if(e.code==='Escape')setMenu(false);if(e.code==='KeyM'&&!e.repeat){e.preventDefault();setMenu(overlay.hidden)}if(e.code==='KeyF'&&!e.repeat&&e.target.tagName!=='INPUT'){$('fullscreen-button').click()}});
 
+
+const bumperTypes={
+ basic:{cost:350,r:19,color:'#58dfff',points:150,kick:.08},
+ power:{cost:750,r:23,color:'#ff68bd',points:350,kick:.26},
+ gold:{cost:1500,r:25,color:'#ffdb69',points:800,kick:.16}
+};
+let cash=1500,playerBumpers=[],chosenKind='basic',selectedPlacedId=null,buildMode=false,pausedBeforeBuild=false,buildHover=null,nextBumperId=1;
+function saveTycoon(){try{localStorage.setItem('nexus-g32-tycoon-v1',JSON.stringify({cash,bumps:playerBumpers.map(b=>({id:b.id,x:b.x,y:b.y,kind:b.kind,level:b.level}))}))}catch(e){}}
+
 canvas.addEventListener('pointerdown',e=>{e.preventDefault();canvas.setPointerCapture(e.pointerId);const bounds=canvas.getBoundingClientRect(),x=(e.clientX-bounds.left)*W/bounds.width,y=(e.clientY-bounds.top)*H/bounds.height;if(buildMode){handleBuildTap(x,y);return}if(phase!=='playing'){launch();return}if(y>410){const side=x<W/2?'left':'right';pointerFlips.set(e.pointerId,side);flip(side,true)}});
 for(const eventName of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(eventName,e=>{const side=pointerFlips.get(e.pointerId);pointerFlips.delete(e.pointerId);if(side)flip(side,[...pointerFlips.values()].includes(side))});
 function segment(ax,ay,bx,by,boost=1.0,onCollision=null){
