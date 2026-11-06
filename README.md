@@ -52,19 +52,33 @@ The arena outside each silhouette is visibly darkened, and **solid balls collide
 
 Guided upper rails still deliberately carry balls above the free-moving playfield. Ghost balls retain their special wall-passing effect.
 
+## Beta Test Lab — $100,000,000 sandbox
+
+Open the floating **☰ menu → Beta Test Lab → 🚀 BETA TEST · $100M**. The game switches to an entirely **separate beta save slot**, while preserving the current normal save.
+
+- Gives you **at least $100,000,000** of in-game cash.
+- Permanently unlocks all seven worlds **within beta**.
+- Unlocks all eight powered machines and raises research to at least Level 6.
+- All 17 bumper types, eight ball types, and nine rail types remain available in their shops, so you can arrange them however you like. Rails and bumpers are **not automatically installed**; that would clutter and overlap your custom designs.
+- Use **↩ NORMAL SAVE** to return to your untouched regular game. Your beta layout stays saved separately for next time.
+- Beta mode is automatically restored after a reload if you left the browser while testing.
+- Clicking **Reset All Progress while in Beta** resets only the beta sandbox and returns to the normal save. Normal Reset All Progress still works normally when you are in the normal slot.
+
+Data keys: normal `nexus-pinball-tycoon-v2`, beta `nexus-pinball-tycoon-v2-beta-sandbox`, active save selector `nexus-pinball-tycoon-v2-active-slot`. There is no online account sync—saves are local to the browser.
+
 ## Reset your progress
 
 Open the floating **☰ menu**, scroll to **Save management**, then click **🗑 RESET ALL PROGRESS**. A browser confirmation warns that this is permanent.
 
 Reset erases **cash, score and high score, map unlocks, purchased bumpers, rails, machines, research, prestige, contracts, efficiency data, and all three blueprints**. It returns the current browser save to MAP01, **$280**, one basic steel ball, and no upgrades.
 
-This is different from **Reset Round** (restarts the moving balls) and **Reset Build** (sells equipment for partial refunds). Reset is written to the same V2 save slot immediately, so the fresh start persists after reload. Other historical game versions' separate save keys are not changed.
+This is different from **Reset Round** (restarts the moving balls) and **Reset Build** (sells equipment for partial refunds). Reset writes to the active save slot immediately, so the fresh start persists after reload. If Beta is active, its separate sandbox is reset and you return to normal without deleting your normal save. Other historical game versions' separate save keys are not changed.
 
 ## Bumper types (17)
 
-| Type | Shop cost | Behavior |
+| Type | Reference price | Behavior |
 | --- | ---: | --- |
-| Basic | $120 | Large ordinary bumper; +$1 per hit |
+| Basic | $120 | Large ordinary bumper; **first copy $60**, earns at least $2 per hit |
 | Power | $280 | Strong bounce |
 | Grab & Roll | $650 | Captures briefly then ejects sideways |
 | Ultra Phase | $1,050 | Tiny pass-through scoring target |
@@ -81,6 +95,21 @@ This is different from **Reset Round** (restarts the moving balls) and **Reset B
 | Growing | $900 | Increases its physical collision radius after hits, then resets |
 | Combo | $1,500 | Awards a bonus for quick repeated hits |
 | Gravity Well | $2,200 | Local attraction field |
+
+### Independent escalating bumper prices
+
+**The first copy of every bumper type costs 50% of its old reference price.** Buying more copies of that *specific type* increases only its own next-copy price by roughly 35% each time (up to a cap of 4× its reference price). For example:
+
+| Copies already owned | Next Basic | Next Power |
+| --- | ---: | ---: |
+| 0 | $60 | $140 |
+| 1 | $81 | $189 |
+| 2 | $109 | $255 |
+| 3 | $148 | $344 |
+
+Buying a Basic never increases the Power price. Selling one reduces only that type's future price; you can't profit by repeatedly buying and refunding because **refunds are based on the original amount actually paid**. Old saves with pre-update bumpers are treated as having paid their historical reference prices. Upgrades scale from the item's paid price, and blueprint swaps correctly calculate the cost of every copy separately.
+
+**Earnings are approximately 35% higher on ordinary positive bumper-hit payouts, rounded up to whole dollars**, so early small hits feel more useful. Maintenance, the six-ball cap and the protected $75 minimum remain.
 
 All kinds support three upgrade levels (increase their point and/or money rewards). Placement uses evenly spaced sockets, with overlap checks including the rotating bumper's sweep area.
 
@@ -129,7 +158,7 @@ Click a machine to purchase it, then press its number to activate it. Some owned
 ### Economy and progression
 
 - Start with $280 and a Steel ball. Free balls automatically respawn on draining.
-- Earn small amounts from bumper hits. Weak rounds charge maintenance, sometimes taking away extra balls.
+- Earn small but faster payouts from bumper hits (35% bonus, rounded up). Weak rounds still charge maintenance and may remove extra balls.
 - Extra balls can be purchased; the count is capped at six. The balance has a firm **$75 floor**.
 - **Contracts** award a one-time cash bonus when the stated hit/rail target is met.
 - **Research** buys levels that give occasional bonus cash.
@@ -158,7 +187,7 @@ Run the no-dependency smoke suite from the repository root:
 node tests/smoke.cjs
 ```
 
-The suite has **169 passing checks** at the time of this update. They cover all seven differently shaped physical wall outlines and collision bounces, the full progress reset and reload, map unlocks and migration, seasonal gradients, raised rails, all 17 bumper types, eight ball choices, eight machines, nine rail locations including a custom rail, scoring, flippers, respawning, cash protections, blueprints, saves, and long-running simulations.
+The suite has **203 passing checks** at the time of this update. They cover all seven differently shaped physical wall outlines and collision bounces, the full progress reset and reload, $100M beta sandbox switching and normal-save protection, type-specific escalating bumper pricing and refunds, earnings bonuses, map unlocks and migration, seasonal gradients, raised rails, all 17 bumper types, eight ball choices, eight machines, nine rail locations including a custom rail, scoring, flippers, respawning, cash protections, blueprints, saves, and long-running simulations.
 
 Important limitation: the suite runs browser-style UI and Canvas mocks, not an actual visible Chrome/StackBlitz session, so it does **not** guarantee pixel-perfect visuals or real-device performance. Open the game in a new browser tab for the visual and feel test.
 
