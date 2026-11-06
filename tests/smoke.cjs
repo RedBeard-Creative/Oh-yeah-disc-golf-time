@@ -201,6 +201,81 @@ function runSmoke(source) {
   ok(resetReload.wallet===280&&resetReload.mode==='uloop'&&resetReload.parts.length===0,
     'reset progress remains reset after browser reload');
 
+
+  // Progressive economy: price curves depend on the count of ONE bumper kind.
+  const economy=boot(),eg=economy.api;
+  eg.walletSet(10000);eg.toggleBuild(true);
+  const openPeg=kind=>Array.from({length:49},(_,i)=>i).find(i=>eg.canBuild(i,kind));
+  ok(eg.bumperPrice('basic')===60,'first Basic bumper costs half of $120');
+  ok(eg.bumperPrice('power')===140,'first Power bumper costs half of $280');
+  const firstBasic=openPeg('basic'),beforeBasic=eg.get().wallet;
+  eg.selectPeg(firstBasic);
+  ok(eg.get().wallet===beforeBasic-60&&eg.get().parts[0].paid===60,'buying first Basic charges $60 and tracks what was paid');
+  ok(eg.bumperPrice('basic')===81,'second Basic bumper increases to $81');
+  ok(eg.bumperPrice('power')===140,'buying Basic does not change Power price');
+  economy.bumpers.find(x=>x.dataset.kind==='power').click();
+  eg.selectPeg(openPeg('power'));
+  ok(eg.get().parts.some(p=>p.kind==='power'&&p.paid===140),'first Power stays cheap independently of Basics');
+  ok(eg.bumperPrice('basic')===81,'buying Power does not change Basic pricing');
+  economy.bumpers.find(x=>x.dataset.kind==='basic').click();
+  const secondBasic=openPeg('basic');
+  eg.selectPeg(secondBasic);
+  ok(eg.get().parts.filter(p=>p.kind==='basic').length===2,'two Basic bumpers can be owned');
+  ok(eg.bumperPrice('basic')===109,'third Basic price rises on its own curve');
+  const oldBalance=eg.get().wallet;
+  eg.selectPeg(firstBasic);
+  economy.node('upgrade').click();
+  const upgraded=eg.get().parts.find(p=>p.index===firstBasic);
+  ok(upgraded.level===2&&upgraded.upgradeSpent===42,'upgrade cost depends on the original $60 purchase');
+  economy.node('sell').click();
+  ok(eg.get().wallet<oldBalance+60,'selling an upgraded item cannot mint free cash');
+  ok(eg.bumperPrice('basic')===81,'selling a Basic reduces only its own next-copy price');
+  ok(eg.bumperPrice('power')===189,'Power second-copy price still depends only on Power count');
+  economy.node('save-plan').click();
+  const beforeBlueprint=eg.get().wallet;
+  ok(eg.loadBlueprint()===true,'saved blueprint repurchases with independent price tiers');
+  ok(eg.get().wallet<beforeBlueprint,'reloading same blueprint applies nonrefundable transaction cost');
+  eg.toggleBuild(false);
+  const normalState=eg.get();
+  const savedNormal=economy.memory.get('nexus-pinball-tycoon-v2');
+  ok(!!savedNormal,'normal progress stored before beta');
+
+  // Beta sandbox gives full access without mutating the player's normal save.
+  ok(eg.enterBeta()===true,'beta mode activates successfully');
+  const beta=eg.get();
+  ok(beta.betaMode===true&&beta.wallet===100000000,'beta grants $100,000,000');
+  ok(names.maps.every(id=>beta.mapUnlocks[id]===true),'beta unlocks all seven worlds');
+  ok(names.machines.every(id=>beta.ownedMachines[id]===true),'beta unlocks all eight powered machines');
+  ok(beta.researchLevel>=6,'beta unlocks advanced research');
+  ok(economy.memory.get('nexus-pinball-tycoon-v2')===savedNormal,'normal save data unchanged on beta activation');
+  ok(economy.memory.get('nexus-pinball-tycoon-v2-active-slot')==='beta','active save slot marked beta');
+  eg.chooseMode('tower');
+  eg.toggleBuild(true);
+  economy.bumpers.find(x=>x.dataset.kind==='basic').click();
+  const betaSlot=openPeg('basic');
+  if(betaSlot!==undefined)eg.selectPeg(betaSlot);
+  eg.toggleBuild(false);
+  const betaState=eg.get();
+  const betaReload=boot(economy.memory).api.get();
+  ok(betaReload.betaMode===true&&betaReload.mode==='tower','beta save restores after browser reload');
+  ok(eg.exitBeta()===true,'Return to Normal Save works');
+  const restoredNormal=eg.get();
+  ok(restoredNormal.betaMode===false&&restoredNormal.mode===normalState.mode,'normal game returns to original world');
+  ok(restoredNormal.wallet===normalState.wallet&&restoredNormal.parts.length===normalState.parts.length,'normal money and bumpers restored exactly');
+  ok(economy.memory.get('nexus-pinball-tycoon-v2')===savedNormal,'beta experiments never alter normal save bytes');
+  ok(eg.enterBeta()===true&&eg.get().mode===betaState.mode,'returning to beta restores its previous world');
+  ok(eg.resetProgress()===true,'reset in beta is supported');
+  ok(eg.get().betaMode===false,'resetting beta returns to normal mode');
+  ok(eg.get().wallet===normalState.wallet&&eg.get().parts.length===normalState.parts.length,'beta reset does not erase normal progress');
+  const reloadedNormal=boot(economy.memory).api.get();
+  ok(reloadedNormal.betaMode===false&&reloadedNormal.wallet===normalState.wallet,'normal slot survives beta reset and reload');
+
+  // Faster payouts are actually earned during physics, not only displayed in the shop.
+  const payoutGame=boot(),pg=payoutGame.api;
+  const walletBeforeHit=pg.get().wallet;
+  pg.setBall(228,255,0,680);pg.step(25);
+  ok(pg.get().wallet-walletBeforeHit>=2,'a $1 starter hit now pays at least $2');
+
   // Long-running simulation stability.
   for(const id of names.maps){a.walletSet(200000);a.chooseMode(id);a.step(1400);
     ok(a.get().balls>=1,'continuous play retains a ball on '+id);
