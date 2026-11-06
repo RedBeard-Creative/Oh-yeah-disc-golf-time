@@ -690,9 +690,7 @@ function applyMapTheme(){
  if(frame?.style){frame.style.borderColor=m.accent;frame.style.boxShadow='0 0 44px '+m.accent+'37,0 18px 80px #000a'}
 }
 
-function resetProgress(){
- const confirmed=confirm('RESET ALL PINBALL TYCOON PROGRESS?\n\nThis permanently erases your cash, score, best score, world unlocks, bumpers, rails, machines, research, prestige, contracts and all 3 blueprints.\n\nYou will start over at MAP01 with $280 and one ball.\n\nThis cannot be undone.');
- if(!confirmed)return false;
+function resetGameMemory(){
  wallet=280;score=0;best=0;income=0;roundHits=0;totalHits=0;totalRailTrips=0;
  mode='uloop';mapUnlocks={uloop:true};parts=[];idCounter=1;
  rails=Object.fromEntries(Object.keys(railSpecs).map(k=>[k,false]));
@@ -702,19 +700,68 @@ function resetProgress(){
  contractsDone=0;researchLevel=0;prestigeLevel=0;
  blueprints=[null,null,null];scoreByKind={};customRailPoints=[];customRailPending=false;
  railDiverter=false;selectedIds.clear();brushMode=false;previewMode=false;
- zoom=1;panX=0;panY=0;dragging=null;pointerMap.clear();
+ zoom=1;panX=0;panY=0;dragging=null;pointerMap.clear();lastMouse=null;
  tick=0;clock=0;phaseTimer=0;spawnCooldown=0;railCooldown=0;comboHits=0;comboUntil=0;
- particles=[];popups=[];balls=[];isBuild=false;
+ particles=[];popups=[];balls=[];isBuild=false;pausedByMenu=false;statsLog=[];
+ rampCharge=0;shortcutReady=0;tempRailSwitch=false;drawPath=[];
  for(const f of [left,right,...upperFlippers]){f.hold=false;f.a=f.rest;f.omega=0}
  for(const b of starter)b.cooldown=0;
  $('plan-slot').value='0';
  $('brush').textContent='🖌 BRUSH OFF';$('trajectory').textContent='⌁ PATH PREVIEW OFF';
  $('context-menu').hidden=true;$('drag-ghost').hidden=true;
- applyZoom();applyMapTheme();ensureBall();save();savePending=false;refreshShop();
- message('Progress reset. Welcome back to MAP01 Neon Foundry! Start with $280 and build your machine again.');
+ applyZoom();applyMapTheme();ensureBall();savePending=false;refreshShop();
+}
+function resetProgress(){
+ const warning=betaMode
+  ?'RESET BETA SANDBOX?\\n\\nThis wipes only your beta test save and returns you to the unchanged normal game. You can activate beta again whenever you like.'
+  :'RESET ALL NORMAL PINBALL PROGRESS?\\n\\nThis permanently erases cash, score, maps, bumpers, rails, machines, upgrades and blueprints in your NORMAL save. Your separate beta save is untouched.\\n\\nYou will start over at MAP01 with $280. This cannot be undone.';
+ if(!confirm(warning))return false;
+ if(betaMode){
+  resetGameMemory();save();betaMode=false;
+  try{localStorage.setItem(activeSlotKey,'normal')}catch(e){}
+  resetGameMemory();load();applyMapTheme();refreshShop();
+  message('Beta sandbox reset. Your original normal save is restored.');
+ }else{
+  resetGameMemory();save();refreshShop();
+  message('Normal progress reset. Welcome to MAP01 with $280 and one steel ball.');
+ }
+ showMenu(true);return true
+}
+function enterBeta(){
+ if(betaMode){message('You are already testing the beta sandbox.');return false}
+ // Snapshot the current normal game before switching; beta writes ONLY its own key.
+ save();
+ try{
+  if(!localStorage.getItem(betaStorageKey)){
+   const normalData=localStorage.getItem(storageKey);
+   if(normalData)localStorage.setItem(betaStorageKey,normalData)
+  }
+  localStorage.setItem(activeSlotKey,'beta');
+ }catch(e){}
+ betaMode=true;
+ resetGameMemory();load();
+ wallet=Math.max(100000000,wallet);
+ for(const key of mapNames)mapUnlocks[key]=true;
+ for(const key of Object.keys(machineSpecs))ownedMachines[key]=true;
+ researchLevel=Math.max(6,researchLevel);
+ // Rail routes are intentionally NOT auto-installed: putting all 9 on the
+ // table at once would overlap each other and hide custom builds.
+ applyMapTheme();save();refreshShop();
+ message('🚀 BETA UNLOCKED! $100,000,000, all worlds, all machines and advanced research. Build any bumpers and rails you want. Your normal save is safe.');
+ showMenu(true);return true
+}
+function exitBeta(){
+ if(!betaMode)return false;
+ save();
+ betaMode=false;
+ try{localStorage.setItem(activeSlotKey,'normal')}catch(e){}
+ resetGameMemory();load();applyMapTheme();refreshShop();
+ message('Back to your original normal save. Your beta playground is saved separately.');
  showMenu(true);return true
 }
 $('reset-progress').onclick=resetProgress;
+$('beta-test').onclick=enterBeta;
+$('exit-beta').onclick=exitBeta;
 
 function chooseMode(value){
  if(!maps[value])return false;
