@@ -60,6 +60,8 @@ h1{font-size:20px;color:#8feeff;letter-spacing:.06em;margin:1px 0 5px}h2{font-si
 @media(max-width:550px){#top-right,#top-left{gap:4px}#wallet,.chip{font-size:11px;padding:9px}#wallet small{display:none}#overlay{top:49px;max-height:calc(100dvh - 55px)}}
 
 /* Consistent hardware-like map/rail material styling */
+.danger-reset{border-color:#b95363!important;background:#481d2b!important;color:#ffd8d8!important}
+.danger-reset:hover{background:#722638!important}
 .mode[data-mode=uloop]{background-image:linear-gradient(135deg,#153950bb,#13273c66)}
 .mode[data-mode=spiral]{background-image:linear-gradient(135deg,#427b96a1,#193c5975)}
 .mode[data-mode=eight]{background-image:linear-gradient(135deg,#58315eaa,#24142d88)}
@@ -108,6 +110,12 @@ h1{font-size:20px;color:#8feeff;letter-spacing:.06em;margin:1px 0 5px}h2{font-si
  <h2>Mouse tools</h2><div class="actiongrid"><button class="btn" id="brush">🖌 BRUSH OFF</button><button class="btn" id="trajectory">⌁ PATH PREVIEW OFF</button><button class="btn" id="batch-upgrade">⬆ UPGRADE SELECTED</button><button class="btn" id="batch-sell">↩ SELL SELECTED</button></div>
  <p class="small">Drag from the shop onto a peg. Right-click a bumper for controls. Mouse wheel zooms; middle-drag pans. Shift-click selects multiple. Brush paints consecutive pegs.</p>
  <h2>Ball controls</h2><div class="actiongrid"><button id="buy-ball" class="btn">+ BALL · $20</button><button id="reset-round" class="btn">↻ RESET ROUND</button><button id="sound" class="btn">♫ SOUND ON</button><button id="clear-layout" class="btn">RESET BUILD</button></div>
+ <h2>Save management</h2>
+ <div class="actiongrid">
+  <button id="reset-progress" class="btn danger-reset" title="Erase all saved Pinball Tycoon progress">🗑 RESET ALL PROGRESS</button>
+  <span class="small">Not the same as Reset Round or Clear Table.</span>
+ </div>
+ <p class="small">Reset all progress erases your money, records, maps, bumpers, machines, saved blueprints and upgrades. You will start at MAP01 with $280. This cannot be undone.</p>
  <h2>Rules</h2>
  <ul class="help"><li>At least one ball is always in play. Drained balls respawn automatically.</li><li>Every additional ball costs money, with a maximum of six. If cash gets low, extras disappear until only one remains.</li><li>Earn just $1–$5 from standard bumper hits. Weak rounds incur a small operating cost.</li><li>Your balance never drops below $75. You can sell and upgrade bumpers.</li><li>Flippers rotate smoothly and collide with balls continuously—hold the key/button to keep one raised.</li></ul>
 </aside>
@@ -668,6 +676,32 @@ function applyMapTheme(){
  if(frame?.style){frame.style.borderColor=m.accent;frame.style.boxShadow='0 0 44px '+m.accent+'37,0 18px 80px #000a'}
 }
 
+function resetProgress(){
+ const confirmed=confirm('RESET ALL PINBALL TYCOON PROGRESS?\n\nThis permanently erases your cash, score, best score, world unlocks, bumpers, rails, machines, research, prestige, contracts and all 3 blueprints.\n\nYou will start over at MAP01 with $280 and one ball.\n\nThis cannot be undone.');
+ if(!confirmed)return false;
+ wallet=280;score=0;best=0;income=0;roundHits=0;totalHits=0;totalRailTrips=0;
+ mode='uloop';mapUnlocks={uloop:true};parts=[];idCounter=1;
+ rails=Object.fromEntries(Object.keys(railSpecs).map(k=>[k,false]));
+ chosenBall='steel';selectedKind='basic';selected=null;movingId=null;
+ ownedMachines={};machineCooldowns={};
+ activeSwitchUntil=0;magnetPulseUntil=0;incomeMultiplierUntil=0;
+ contractsDone=0;researchLevel=0;prestigeLevel=0;
+ blueprints=[null,null,null];scoreByKind={};customRailPoints=[];customRailPending=false;
+ railDiverter=false;selectedIds.clear();brushMode=false;previewMode=false;
+ zoom=1;panX=0;panY=0;dragging=null;pointerMap.clear();
+ tick=0;clock=0;phaseTimer=0;spawnCooldown=0;railCooldown=0;comboHits=0;comboUntil=0;
+ particles=[];popups=[];balls=[];isBuild=false;
+ for(const f of [left,right,...upperFlippers]){f.hold=false;f.a=f.rest;f.omega=0}
+ for(const b of starter)b.cooldown=0;
+ $('plan-slot').value='0';
+ $('brush').textContent='🖌 BRUSH OFF';$('trajectory').textContent='⌁ PATH PREVIEW OFF';
+ $('context-menu').hidden=true;$('drag-ghost').hidden=true;
+ applyZoom();applyMapTheme();ensureBall();save();savePending=false;refreshShop();
+ message('Progress reset. Welcome back to MAP01 Neon Foundry! Start with $280 and build your machine again.');
+ showMenu(true);return true
+}
+$('reset-progress').onclick=resetProgress;
+
 function chooseMode(value){
  if(!maps[value])return false;
  if(!mapUnlocks[value]){
@@ -1030,7 +1064,7 @@ window.__pinballTest={get:()=>({
  flippers:{left:left.a,right:right.a,leftHeld:left.hold,rightHeld:right.hold}
 }),step:(n=1)=>{for(let i=0;i<n;i++)step(DT)},canBuild,selectPeg,toggleBuild,chooseMode,spawn,dropBall,machineAction,saveBlueprint,loadBlueprint,doContract,doResearch,doPrestige,railPathFor,
  setBall:(x,y,vx,vy)=>{const b=balls[0]||spawn();b.modePath=null;b.x=x;b.y=y;b.vx=vx;b.vy=vy},
- walletSet:v=>{wallet=v;refreshShop()},hold:(side,on)=>{(side==='left'?left:right).hold=on},cashChange,setback,
+ walletSet:v=>{wallet=v;refreshShop()},hold:(side,on)=>{(side==='left'?left:right).hold=on},cashChange,setback,resetProgress,worldOutline,shapeClearance,isPegVisible,reflectShapeWalls,
  partSet:(index,kind)=>{parts.push({id:idCounter++,kind,index,level:1,cooldown:0})}};
 })();
 </script>
