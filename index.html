@@ -395,7 +395,7 @@ function railPathFor(side){
 
 function posOn(path,d){let leftDist=d;for(let i=0;i<path.distances.length;i++){const len=path.distances[i];if(leftDist<=len||i===path.distances.length-1){const a=path.points[i],b=path.points[i+1],t=clamp(leftDist/len,0,1),dx=(b[0]-a[0])/len,dy=(b[1]-a[1])/len;return {x:a[0]+(b[0]-a[0])*t,y:a[1]+(b[1]-a[1])*t,dx,dy,segment:i}}leftDist-=len}return {x:0,y:0,dx:0,dy:1,segment:0}}
 function attach(b,path,kind,side){b.modePath={path,at:0,kind,side,speed:kind==='u'?530:610};let p=posOn(path,0);b.x=p.x;b.y=p.y;b.vx=0;b.vy=0}
-function spawn(initial=false,kind='steel'){const b=emptyBall(kind);if(mode==='uloop'){attach(b,uRail,'u','left')}else if(mode==='spiral'){attach(b,spiralPath,'u','left')}else if(mode==='eight'){attach(b,eightPath,'u','left')}else{b.x=initial?128:170+Math.random()*230;b.y=142;b.vx=(Math.random()-.5)*240;b.vy=115}balls.push(b);return b}
+function spawn(initial=false,kind='steel'){const b=emptyBall(kind);if(mode==='uloop'){attach(b,uRail,'u','left')}else if(mode==='spiral'){attach(b,spiralPath,'u','left')}else if(mode==='eight'){attach(b,eightPath,'u','left')}else{b.x=initial?285:185+Math.random()*210;b.y=160;b.vx=(Math.random()-.5)*240;b.vy=115}balls.push(b);return b}
 function ensureBall(){if(balls.length===0)spawn(true)}
 function dropBall(extra=false){
  if(balls.length>=6){message('Six balls at once is the maximum.');return false}
