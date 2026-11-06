@@ -454,23 +454,31 @@ function hitBumper(b,o,x,y){
   sound(o.kind==='power'?760:470,.045)
  }
 }
-function wallBall(b){if(b.type==='ghost'&&b.x<57){b.x=485;b.vx=Math.abs(b.vx)*.86;return}if(b.type==='ghost'&&b.x>511){b.x=82;b.vx=-Math.abs(b.vx)*.86;return}if(b.x<57){b.x=57;if(b.vx<0)b.vx=-b.vx*.82}if(b.x>511){b.x=511;if(b.vx>0)b.vx=-b.vx*.82}if(b.y<97){b.y=97;if(b.vy<0)b.vy=-b.vy*.82}
- // Pegs are attachment holes, not physical obstacles unless occupied.
- // Two triangular guides lead the ball toward flippers.
+function wallBall(b){
+ if(b.type==='ghost'){
+  // Ghost balls deliberately bypass ordinary walls, wrapping at the outer edge.
+  if(b.x<55){b.x=505;b.vx=Math.abs(b.vx)*.86}
+  if(b.x>515){b.x=78;b.vx=-Math.abs(b.vx)*.86}
+  if(b.y<94){b.y=102;if(b.vy<0)b.vy=-b.vy*.82}
+ }else{
+  reflectShapeWalls(b);
+ }
  if(b.type!=='ghost'){
- segmentBall(b,61,655,159,700,6,.9);
- segmentBall(b,506,655,410,700,6,.9)
+  segmentBall(b,61,655,159,700,6,.9);
+  segmentBall(b,506,655,410,700,6,.9)
  }
  if(mode==='hourglass'){
-  segmentBall(b,58,365,228,425,10,.8);segmentBall(b,342,425,507,365,10,.8);
+  segmentBall(b,58,365,228,425,10,.8);
+  segmentBall(b,342,425,507,365,10,.8);
  }
  if(mode==='twins'){
-  segmentBall(b,285,152,285,347,7,.84);segmentBall(b,285,422,285,670,7,.84);
- }if(mode==='tower'){
-  segmentBall(b,57,306,379,306,6,.8);
-  segmentBall(b,199,490,509,490,6,.8);
+  segmentBall(b,285,189,285,347,7,.84);
+  segmentBall(b,285,422,285,670,7,.84);
  }
- 
+ if(mode==='tower'){
+  segmentBall(b,125,306,379,306,6,.8);
+  segmentBall(b,199,490,474,490,6,.8);
+ }
 }
 function segmentBall(b,x1,y1,x2,y2,r,restitution){const dx=x2-x1,dy=y2-y1,n=dx*dx+dy*dy,t=clamp(((b.x-x1)*dx+(b.y-y1)*dy)/n,0,1),cx=x1+t*dx,cy=y1+t*dy,ox=b.x-cx,oy=b.y-cy,d=Math.hypot(ox,oy),limit=b.r+r;
  if(d>=limit)return false;const nx=d<.0001?0:ox/d,ny=d<.0001?-1:oy/d;b.x=cx+nx*(limit+.2);b.y=cy+ny*(limit+.2);const towards=b.vx*nx+b.vy*ny;if(towards<0){b.vx-=(1+restitution)*towards*nx;b.vy-=(1+restitution)*towards*ny}return true}
@@ -521,6 +529,7 @@ function advanceBall(b,dt){
  b.vx+=force.x*dt*ballCfg.gravity;b.vy+=force.y*dt*ballCfg.gravity;
  for(const o of parts){
   if(o.kind!=='magnet'&&o.kind!=='gravity')continue;
+  if(!partActive(o))continue;
   const q=pegGrid[o.index],dx=q.x-b.x,dy=q.y-b.y,dist=Math.hypot(dx,dy);
   if(dist>12&&dist<150){
    const power=(o.kind==='magnet'?520:740)*Math.pow(1-dist/150,1.2)*o.level;
@@ -535,7 +544,7 @@ function advanceBall(b,dt){
  b.x+=b.vx*dt;b.y+=b.vy*dt;
  wallBall(b);
  for(const fixed of starter){if(resolveCircle(b,fixed.x,fixed.y,fixed.r,1.23)){if(!fixed.cooldown||fixed.cooldown<clock){fixed.cooldown=clock+.15;addPoints(fixed.score,fixed.points,fixed.x,fixed.y,COLORS.blue);sound(560,.03)}}}
- for(const o of parts){const p=pegGrid[o.index];hitBumper(b,o,p.x,p.y)}
+ for(const o of parts){if(!partActive(o))continue;const p=pegGrid[o.index];hitBumper(b,o,p.x,p.y)}
  flipperBall(b,left);flipperBall(b,right);
  if(mode==='tower'||mode==='twins'||ownedMachines.emergency)for(const f of upperFlippers)flipperBall(b,f);
  if(ownedMachines.speed&&Math.abs(b.y-295)<9&&Math.abs(b.x-291)<32&&(!b.speedUntil||clock>b.speedUntil)){
@@ -543,13 +552,19 @@ function advanceBall(b,dt){
  }
  tryRail(b)
 }
-function canBuild(index,kind,ignoreId=null){const p=pegGrid[index],t=types[kind];if(!p||!t)return false;
+function canBuild(index,kind,ignoreId=null){
+ const p=pegGrid[index],t=types[kind];if(!p||!t)return false;
+ if(shapeClearance(p.x,p.y)<t.r+(t.sweep||0)+10)return false;
  if(p.x-t.r-(t.sweep||0)<71||p.x+t.r+(t.sweep||0)>495||p.y-t.r-(t.sweep||0)<161||p.y+t.r+(t.sweep||0)>655)return false;
  if(starter.some(s=>Math.hypot(s.x-p.x,s.y-p.y)<s.r+t.r+(t.sweep||0)+8))return false;
  for(const b of parts){if(b.id===ignoreId)continue;const q=pegGrid[b.index];if(Math.hypot(q.x-p.x,q.y-p.y)<t.r+(t.sweep||0)+types[b.kind].r+(types[b.kind].sweep||0)+15)return false}
  if(rails.left&&p.col===0&&p.row>=2&&p.row<=5)return false;
  if(rails.right&&p.col===6&&p.row>=2&&p.row<=5)return false;
  return true
+}
+function partActive(b){
+ const p=pegGrid[b.index],t=types[b.kind];
+ return !!p&&!!t&&shapeClearance(p.x,p.y)>=t.r+(t.sweep||0)+8
 }
 function selectedPart(){return parts.find(p=>p.id===selected)}
 function costUpgrade(b){return Math.round(types[b.kind].cost*(b.level===1?.7:1.1))}
@@ -558,7 +573,9 @@ function refreshShop(){const b=selectedPart();
  $('score').textContent=score.toLocaleString();$('best').textContent=best.toLocaleString();
  $('income').textContent='$'+income;
  $('table-value').textContent='$'+Math.round(parts.reduce((v,p)=>v+types[p.kind].cost+(p.level-1)*types[p.kind].cost*.7,0)+Object.entries(rails).reduce((v,[k,on])=>v+(on&&railSpecs[k]?railSpecs[k].price:0),0)).toLocaleString();
- $('active-balls').textContent=balls.length;$('owned').textContent=parts.length+'/26';
+ $('active-balls').textContent=balls.length;
+ const parked=parts.filter(p=>!partActive(p)).length;
+ $('owned').textContent=parts.length+'/26'+(parked?' · '+parked+' PARKED':'');
  $('selection').textContent=b?b.kind.toUpperCase()+' L'+b.level:typeof selected==='string'&&selected.startsWith('rail')?selected.toUpperCase():'None';
  $('builder').textContent=isBuild?'✓ PLAY':'🛠 BUILD';$('builder').classList.toggle('active',isBuild);$('placement-tip').hidden=!isBuild;
  for(const el of document.querySelectorAll('#bumper-shop .shop-item'))el.classList.toggle('active',el.dataset.kind===selectedKind);
@@ -663,7 +680,8 @@ function chooseMode(value){
   sound(980,.18);notify('WORLD UNLOCKED!',290,340,maps[value].accent);
  }
  mode=value;balls=[];ensureBall();applyMapTheme();
- message(maps[value].desc);
+ const parked=parts.filter(p=>!partActive(p)).length;
+ message(maps[value].desc+(parked?' · '+parked+' owned bumpers are parked where this map is too narrow. Move them in Build mode.':''));
  save();refreshShop();return true;
 }
 $('builder').onclick=()=>toggleBuild(!isBuild);$('play').onclick=()=>toggleBuild(false);
@@ -923,16 +941,27 @@ function drawRailNetwork(){
  }
 }
 
+function drawPlayfieldMask(){
+ const wall=worldOutline();
+ g.save();
+ // Even-odd fill darkens everything OUTSIDE this world's playable silhouette.
+ g.fillStyle='#020713e5';
+ g.beginPath();g.moveTo(0,66);g.lineTo(W,66);g.lineTo(W,H);g.lineTo(0,H);g.closePath();
+ g.moveTo(wall[0][0],wall[0][1]);
+ for(let i=1;i<wall.length;i++)g.lineTo(wall[i][0],wall[i][1]);
+ g.closePath();g.fill('evenodd');
+ g.restore()
+}
 function render(){
  g.setTransform(1.2,0,0,1.2,0,0);
  mapBackground();
+ drawPlayfieldMask();
  g.fillStyle='#091b30d7';g.fillRect(0,0,W,68);g.textAlign='left';g.fillStyle=COLORS.blue;g.font='900 27px system-ui';g.fillText('PINBALL',16,30);g.fillStyle=COLORS.pink;g.fillText('TYCOON',161,30);
  g.fillStyle='#b8def7';g.font='bold 12px monospace';g.fillText('SCORE '+score.toLocaleString(),16,53);
  g.textAlign='right';g.fillStyle=COLORS.green;g.fillText(maps[mode]?.title||'PINBALL',584,53);
  const trim=maps[mode];
- raisedRail([[60,112],[60,656],[133,714]],trim.accent,.68,true);
- raisedRail([[508,112],[508,655],[432,713]],trim.accent,.68,true);
- raisedRail([[60,112],[95,85],[470,85],[508,112]],trim.secondary,.55,true);
+ // Walls and 3D raised rails now follow each map's real collision outline.
+ raisedRail(worldOutline(),trim.accent,.78,true);
  drawRailNetwork();
 if(mode==='hourglass'){
  raisedRail([[58,365],[228,425]],trim.accent,.62,true);
@@ -950,10 +979,11 @@ if(mode==='tower'){
  g.textAlign='center';g.font='bold 14px system-ui';g.fillStyle=trim.accent;g.fillText('GRAVITY TOWER',280,128)
 }
  if(mode==='flip'){const a=phaseTimer*.24;g.textAlign='center';g.font='bold 20px system-ui';g.fillStyle=COLORS.purple;g.fillText('GRAVITY FIELD',285,117);g.beginPath();g.moveTo(285,157);g.lineTo(285+Math.sin(a)*33,157+Math.cos(a)*33);g.strokeStyle=COLORS.green;g.lineWidth=5;g.stroke()}
- for(const socket of pegGrid){g.fillStyle='#335876';g.beginPath();g.arc(socket.x,socket.y,5,0,TAU);g.fill();if(isBuild){g.strokeStyle='#4f8dbf';g.lineWidth=1;g.beginPath();g.arc(socket.x,socket.y,10,0,TAU);g.stroke()}}
+ for(let pi=0;pi<pegGrid.length;pi++){const socket=pegGrid[pi];if(!isPegVisible(pi))continue;g.fillStyle='#335876';g.beginPath();g.arc(socket.x,socket.y,5,0,TAU);g.fill();if(isBuild){g.strokeStyle='#4f8dbf';g.lineWidth=1;g.beginPath();g.arc(socket.x,socket.y,10,0,TAU);g.stroke()}}
  for(const b of starter)drawBumper(b.x,b.y,b.kind,1);
  for(const part of parts){const p=pegGrid[part.index],sweep=types[part.kind].sweep||0,angle=clock*2.2+part.id*.23;
  const cx=p.x+Math.cos(angle)*sweep,cy=p.y+Math.sin(angle)*sweep;
+ if(!partActive(part)){if(isBuild){g.save();g.globalAlpha=.22;drawBumper(p.x,p.y,part.kind,part.level);g.restore()}continue}
  if(sweep)circle(p.x,p.y,sweep,COLORS.purple,false);
  drawBumper(cx,cy,part.kind,part.level,false,part.kind==='growing'?(part.grow||0):0);
  if(isBuild&&selected===part.id)circle(p.x,p.y,types[part.kind].r+sweep+8,'#fff',false)
