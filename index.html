@@ -318,7 +318,7 @@ const betaStorageKey=storageKey+'-beta-sandbox';
 const activeSlotKey=storageKey+'-active-slot';
 try{betaMode=localStorage.getItem(activeSlotKey)==='beta'}catch(e){betaMode=false}
 function save(){try{localStorage.setItem(betaMode?betaStorageKey:storageKey,JSON.stringify({
- wallet,score,best,mode,parts:parts.map(b=>({id:b.id,index:b.index,kind:b.kind,level:b.level})),rails,idCounter,
+ wallet,score,best,mode,parts:parts.map(b=>({id:b.id,index:b.index,kind:b.kind,level:b.level,paid:paidFor(b),upgradeSpent:spentOnUpgrades(b)})),rails,idCounter,
  chosenBall,mapUnlocks,ownedMachines,researchLevel,prestigeLevel,contractsDone,totalHits,totalRailTrips,blueprints,scoreByKind,
  customRailPoints
  }))}catch(e){}}
@@ -336,7 +336,7 @@ function load(){try{const d=JSON.parse(localStorage.getItem(betaMode?betaStorage
  if(Array.isArray(d.parts)){for(const b of d.parts.slice(0,26)){
  if(!types[b.kind]||!Number.isInteger(b.index)||b.index<0||b.index>=pegGrid.length)continue;
  if(parts.some(p=>p.index===b.index))continue;
- parts.push({id:Math.max(1,Number(b.id)||idCounter++),index:b.index,kind:b.kind,level:Math.max(1,Math.min(3,Number(b.level)||1)),hit:0,cooldown:0,grow:0})
+ parts.push({id:Math.max(1,Number(b.id)||idCounter++),index:b.index,kind:b.kind,level:Math.max(1,Math.min(3,Number(b.level)||1)),hit:0,cooldown:0,grow:0,paid:Number.isFinite(b.paid)&&b.paid>0?b.paid:types[b.kind].cost,upgradeSpent:Number.isFinite(b.upgradeSpent)&&b.upgradeSpent>=0?b.upgradeSpent:undefined})
  }}idCounter=Math.max(Number(d.idCounter)||1,1,...parts.map(p=>p.id+1));
  ownedMachines=Object.fromEntries(Object.keys(machineSpecs).map(k=>[k,!!d.ownedMachines?.[k]]));
  researchLevel=Number(d.researchLevel)||0;prestigeLevel=Number(d.prestigeLevel)||0;
@@ -369,6 +369,9 @@ function notify(t,x,y,c='#baffeb'){popups.push({t,x,y,c,time:1.2});if(popups.len
 function spark(x,y,c){for(let i=0;i<9;i++){const a=Math.random()*TAU,sp=50+Math.random()*200;particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,t:.3+Math.random()*.25,c})}}
 function addPoints(points,earn,x,y,c=COLORS.blue,kind=null,b=null){
  const rawEarn=earn;
+ // ~35% faster early income. Small integer rewards round up so a Basic hit
+ // can actually feel more rewarding instead of still displaying $1.
+ if(earn>0)earn=Math.ceil(earn*1.35);
  if(incomeMultiplierUntil>clock)earn*=2;
  if(b?.type==='gold'&&earn)earn+=1;
  if(b?.type==='fire'&&earn){if(clock-b.chainAt<2){b.chainCount++;if(b.chainCount>=3){earn+=2;b.chainCount=0;notify('FIRE COMBO +$2',x,y-24,'#ffa264')}}else b.chainCount=1;b.chainAt=clock}
@@ -586,7 +589,30 @@ function partActive(b){
  return !!p&&!!t&&shapeClearance(p.x,p.y)>=t.r+(t.sweep||0)+8
 }
 function selectedPart(){return parts.find(p=>p.id===selected)}
-function costUpgrade(b){return Math.round(types[b.kind].cost*(b.level===1?.7:1.1))}
+function ownedCount(kind){return parts.filter(p=>p.kind===kind).length}
+function bumperPrice(kind,overrideCount=null){
+ const t=types[kind];if(!t)return 0;
+ const count=overrideCount===null?ownedCount(kind):overrideCount;
+ // The first item is half price. ONLY additional copies of this same
+ // bumper type raise its price; other kinds have independent price curves.
+ return Math.max(1,Math.round(t.cost*Math.min(4,.5*Math.pow(1.35,Math.max(0,count)))));
+}
+function paidFor(b){return Number.isFinite(b.paid)&&b.paid>0?b.paid:types[b.kind].cost}
+function spentOnUpgrades(b){
+ return Number.isFinite(b.upgradeSpent)&&b.upgradeSpent>=0?b.upgradeSpent:
+ (b.level>=2?Math.round(types[b.kind].cost*.7):0)+(b.level>=3?Math.round(types[b.kind].cost*1.1):0);
+}
+function refundBumper(b){return Math.round(paidFor(b)*.65+spentOnUpgrades(b)*.35)}
+function costUpgrade(b){return Math.round(paidFor(b)*(b.level===1?.7:1.1))}
+function planPartsWithPrices(list){
+ const counters=Object.create(null);
+ return list.map(p=>{
+  const n=counters[p.kind]||0;counters[p.kind]=n+1;
+  const paid=bumperPrice(p.kind,n);
+  const upgradeSpent=(p.level>=2?Math.round(paid*.7):0)+(p.level>=3?Math.round(paid*1.1):0);
+  return {kind:p.kind,index:p.index,level:p.level,paid,upgradeSpent}
+ })
+}
 function refreshShop(){const b=selectedPart();
  $('cash').textContent='$'+wallet.toLocaleString();
  $('save-label').textContent=betaMode?'BETA SANDBOX':'NORMAL SAVE · MIN $75';
@@ -594,13 +620,19 @@ function refreshShop(){const b=selectedPart();
  $('beta-note').textContent=betaMode?'BETA ACTIVE · All 7 worlds and 8 machines unlocked, research level 6. Install bumpers and rails where you want. Normal save is protected.':'Get $100,000,000, unlock all worlds and machines, and test any build without overwriting your normal save.';
  $('score').textContent=score.toLocaleString();$('best').textContent=best.toLocaleString();
  $('income').textContent='$'+income;
- $('table-value').textContent='$'+Math.round(parts.reduce((v,p)=>v+types[p.kind].cost+(p.level-1)*types[p.kind].cost*.7,0)+Object.entries(rails).reduce((v,[k,on])=>v+(on&&railSpecs[k]?railSpecs[k].price:0),0)).toLocaleString();
+ $('table-value').textContent='$'+Math.round(parts.reduce((v,p)=>v+paidFor(p)+spentOnUpgrades(p),0)+Object.entries(rails).reduce((v,[k,on])=>v+(on&&railSpecs[k]?railSpecs[k].price:0),0)).toLocaleString();
  $('active-balls').textContent=balls.length;
  const parked=parts.filter(p=>!partActive(p)).length;
  $('owned').textContent=parts.length+'/26'+(parked?' · '+parked+' PARKED':'');
  $('selection').textContent=b?b.kind.toUpperCase()+' L'+b.level:typeof selected==='string'&&selected.startsWith('rail')?selected.toUpperCase():'None';
  $('builder').textContent=isBuild?'✓ PLAY':'🛠 BUILD';$('builder').classList.toggle('active',isBuild);$('placement-tip').hidden=!isBuild;
- for(const el of document.querySelectorAll('#bumper-shop .shop-item'))el.classList.toggle('active',el.dataset.kind===selectedKind);
+ for(const el of document.querySelectorAll('#bumper-shop .shop-item')){
+  const kind=el.dataset.kind,t=types[kind],count=ownedCount(kind);
+  el.classList.toggle('active',kind===selectedKind);
+  const em=el.querySelector('em');
+  if(em)em.textContent='$'+bumperPrice(kind).toLocaleString()+' next · +$'+Math.ceil(t.points*1.35)+'/hit · '+count+' owned';
+  el.title=t.desc+' · next one costs $'+bumperPrice(kind).toLocaleString();
+ }
  for(const el of document.querySelectorAll('#ball-shop .ball-item'))el.classList.toggle('active',el.dataset.ball===chosenBall);
  for(const el of document.querySelectorAll('.mode')){
  const map=maps[el.dataset.mode],unlocked=!!mapUnlocks[el.dataset.mode];
@@ -631,8 +663,13 @@ function selectPeg(index){
  if(movingId){const part=selectedPart();if(part&&canBuild(index,part.kind,part.id)){part.index=index;movingId=null;message('Bumper moved.');save();refreshShop()}else message('That peg is blocked.');return}
  if(parts.length>=26){message('Maximum 26 purchased bumpers.');showMenu(true);return}
  if(!canBuild(index,selectedKind)){message('That peg is too close to something else. Pick another.');return}
- const t=types[selectedKind];if(wallet-t.cost<MIN_CASH){message('Not enough money. You must keep the $75 reserve.');showMenu(true);return}
- cashChange(-t.cost);parts.push({id:idCounter++,kind:selectedKind,index,level:1,cooldown:0});selected=null;sound(800,.08);message('Placed '+selectedKind+' on peg '+pegGrid[index].key+'.');refreshShop();save()
+ const price=bumperPrice(selectedKind);
+ if(wallet-price<MIN_CASH){message('Need $'+price.toLocaleString()+' for the next '+types[selectedKind].name+'. Keep your $75 reserve.');showMenu(true);return}
+ cashChange(-price);
+ parts.push({id:idCounter++,kind:selectedKind,index,level:1,cooldown:0,paid:price,upgradeSpent:0});
+ selected=null;sound(800,.08);
+ message('Bought '+types[selectedKind].name+' for $'+price.toLocaleString()+'. The next '+types[selectedKind].name+' will cost $'+bumperPrice(selectedKind).toLocaleString()+'.');
+ refreshShop();save()
 }
 function nearestPeg(x,y){let index=-1,distance=29;for(let i=0;i<pegGrid.length;i++){const p=pegGrid[i],d=Math.hypot(x-p.x,y-p.y);if(d<distance){distance=d;index=i}}return index}
 
@@ -796,14 +833,20 @@ for(const [side,r] of Object.entries(railSpecs))$('rail-'+side).onclick=()=>{
  if(wallet-r.price<MIN_CASH){message('Earn $'+(r.price-wallet+MIN_CASH)+' more to build '+r.name+'.');return}
  cashChange(-r.price);rails[side]=true;message('Built '+r.name+'!');sound(1020,.13);save();refreshShop()
 };
-$('upgrade').onclick=()=>{const b=selectedPart();if(!b||b.level>=3)return;const cost=costUpgrade(b);if(wallet-cost<MIN_CASH)return;cashChange(-cost);b.level++;sound(870,.07);save();refreshShop();message('Upgraded to level '+b.level+'. More points and money per hit.')};
-$('sell').onclick=()=>{const b=selectedPart();if(!b)return;const refund=Math.round(types[b.kind].cost*.65+(b.level-1)*types[b.kind].cost*.35);cashChange(refund);parts=parts.filter(p=>p.id!==b.id);selected=null;movingId=null;save();refreshShop();message('Sold bumper for $'+refund+'.')};
+$('upgrade').onclick=()=>{const b=selectedPart();if(!b||b.level>=3)return;const cost=costUpgrade(b);if(wallet-cost<MIN_CASH)return;cashChange(-cost);b.upgradeSpent=spentOnUpgrades(b)+cost;b.level++;sound(870,.07);save();refreshShop();message('Upgraded to level '+b.level+' for $'+cost+'. More money per hit.')};
+$('sell').onclick=()=>{const b=selectedPart();if(!b)return;const refund=refundBumper(b);cashChange(refund);parts=parts.filter(p=>p.id!==b.id);selected=null;movingId=null;save();refreshShop();message('Sold bumper for $'+refund+'. Next '+types[b.kind].name+' price: $'+bumperPrice(b.kind)+'.')};
 $('move').onclick=()=>{const b=selectedPart();if(!b)return;movingId=b.id;message('Now tap an empty peg to move the selected bumper.');showMenu(false);refreshShop()};
 $('buy-ball').onclick=()=>dropBall(true);$('spam').onclick=()=>dropBall(true);
 $('mobile-launch').onclick=()=>dropBall(true);
 $('reset-round').onclick=()=>{balls=[];income=0;ensureBall();message('New round started. Your table and cash remain.');refreshShop()};
 $('sound').onclick=()=>{soundOn=!soundOn;$('sound').textContent=soundOn?'♫ SOUND ON':'♫ SOUND OFF'};
-$('clear-layout').onclick=()=>{if(!confirm('Sell ALL owned bumpers for partial refunds and remove both rails?'))return;for(const b of parts)cashChange(Math.round(types[b.kind].cost*.65));parts=[];for(const side of ['left','right'])if(rails[side]){cashChange(450);rails[side]=false}selected=null;movingId=null;save();refreshShop();message('Layout cleared and partial refunds issued.')};
+$('clear-layout').onclick=()=>{
+ if(!confirm('Sell all bumper types and purchased rails for partial refunds? World unlocks and machines stay.'))return;
+ for(const b of parts)cashChange(refundBumper(b));
+ parts=[];
+ for(const side of Object.keys(railSpecs))if(rails[side]){cashChange(Math.round(railSpecs[side].price*.5));rails[side]=false}
+ customRailPoints=[];selected=null;movingId=null;selectedIds.clear();save();refreshShop();message('Layout sold for partial refunds; types have returned to first-copy pricing.')
+};
 for(const [id,f] of [['left',left],['right',right]]){const el=$(id);el.onpointerdown=e=>{e.preventDefault();el.setPointerCapture(e.pointerId);f.hold=true};for(const evt of ['pointerup','pointercancel','lostpointercapture'])el.addEventListener(evt,()=>f.hold=false)}
 
 function boardPoint(e){const r=canvas.getBoundingClientRect();return {x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height}}
