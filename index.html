@@ -93,6 +93,7 @@ h1{font-size:20px;color:#8feeff;letter-spacing:.06em;margin:1px 0 5px}h2{font-si
  <div class="modegrid" id="map-grid"></div><p class="small" id="map-description">Begin at MAP01. Earn coins to unlock the other six worlds.</p>
  <p class="small" id="map-progress"></p>
  <h2>Bumper shop — snap to pegs</h2>
+ <p class="small">First copy of each type is half price. Buying MORE of that same type raises only its own price. Other types stay cheap until you buy them.</p>
  <div class="shopgrid" id="bumper-shop"></div>
  <h2>Ball lab — choose the next ball</h2>
  <div class="shopgrid" id="ball-shop"></div>
@@ -125,7 +126,8 @@ h1{font-size:20px;color:#8feeff;letter-spacing:.06em;margin:1px 0 5px}h2{font-si
  </div>
  <p class="small">Reset all progress erases your money, records, maps, bumpers, machines, saved blueprints and upgrades. You will start at MAP01 with $280. This cannot be undone.</p>
  <h2>Rules</h2>
- <ul class="help"><li>At least one ball is always in play. Drained balls respawn automatically.</li><li>Every additional ball costs money, with a maximum of six. If cash gets low, extras disappear until only one remains.</li><li>Earn just $1–$5 from standard bumper hits. Weak rounds incur a small operating cost.</li><li>Your balance never drops below $75. You can sell and upgrade bumpers.</li><li>Flippers rotate smoothly and collide with balls continuously—hold the key/button to keep one raised.</li></ul>
+ <ul class="help"><li>At least one ball is always in play. Drained balls respawn automatically.</li><li>Every additional ball costs money, with a maximum of six. If cash gets low, extras disappear until only one remains.</li><li>Earn a little faster (about 35% extra on bumper-hit payouts, rounded up). Weak rounds still have upkeep.</li>
+ <li>Each bumper type has its own price curve: the first one is cheaper, and later copies gradually cost more.</li><li>Your balance never drops below $75. You can sell and upgrade bumpers.</li><li>Flippers rotate smoothly and collide with balls continuously—hold the key/button to keep one raised.</li></ul>
 </aside>
 <script>
 (()=>{
@@ -681,17 +683,29 @@ function doPrestige(){if(score<50000||contractsDone<3||wallet<5000){message('Pre
 function showEfficiency(){const arr=Object.entries(scoreByKind).sort((a,b)=>b[1].cash-a[1].cash);message(arr.length?'Top earners: '+arr.slice(0,3).map(([k,v])=>k+' $'+v.cash+' / '+v.hits+' hits').join(' · '):'Play to gather efficiency data.')}
 function blueprintSlot(){return Math.max(0,Math.min(2,Number($('plan-slot').value)||0))}
 function saveBlueprint(){const slot=blueprintSlot();blueprints[slot]={parts:parts.map(p=>({kind:p.kind,index:p.index,level:p.level})),rails:{...rails},customRailPoints:[...customRailPoints],mode};save();message('Saved blueprint '+(slot+1)+'.')}
-function loadBlueprint(){const slot=blueprintSlot(),p=blueprints[slot];if(!p){message('Blueprint slot '+(slot+1)+' is empty.');return}
- const oldRefund=parts.reduce((v,b)=>v+Math.round(types[b.kind].cost*.65),0)+Object.entries(rails).reduce((v,[k,on])=>v+(on?railSpecs[k].price*.5:0),0);
- const cost=p.parts.reduce((v,b)=>v+types[b.kind].cost+(b.level-1)*types[b.kind].cost*.7,0)+Object.entries(p.rails).reduce((v,[k,on])=>v+(on&&railSpecs[k]?railSpecs[k].price:0),0);
- const net=Math.ceil(cost-oldRefund);if(wallet-net<MIN_CASH){message('Need $'+net+' net to load blueprint.');return}
- if(!confirm('Switch to blueprint '+(slot+1)+'? Old parts will be refunded and new ones purchased ($'+net+' net).'))return;
- cashChange(-net);parts=p.parts.map(b=>({id:idCounter++,kind:b.kind,index:b.index,level:b.level,cooldown:0}));rails={...p.rails};customRailPoints=[...(p.customRailPoints||[])];mode=maps[p.mode]&&mapUnlocks[p.mode]?p.mode:mode;applyMapTheme();balls=[];ensureBall();selected=null;selectedIds.clear();save();refreshShop();message('Loaded blueprint '+(slot+1))
+function loadBlueprint(){
+ const slot=blueprintSlot(),plan=blueprints[slot];
+ if(!plan){message('Blueprint slot '+(slot+1)+' is empty.');return false}
+ if(!Array.isArray(plan.parts)||plan.parts.length>26||plan.parts.some(p=>!types[p.kind])){message('Blueprint data is not valid.');return false}
+ const oldRefund=parts.reduce((sum,b)=>sum+refundBumper(b),0)+Object.entries(rails).reduce((sum,[k,on])=>sum+(on&&railSpecs[k]?Math.round(railSpecs[k].price*.5):0),0);
+ const purchased=planPartsWithPrices(plan.parts);
+ const bumperTotal=purchased.reduce((sum,b)=>sum+b.paid+b.upgradeSpent,0);
+ const railTotal=Object.entries(plan.rails||{}).reduce((sum,[k,on])=>sum+(on&&railSpecs[k]?railSpecs[k].price:0),0);
+ const net=Math.ceil(bumperTotal+railTotal-oldRefund);
+ if(wallet-net<MIN_CASH){message('Need $'+net+' net to load this blueprint.');return false}
+ if(!confirm('Load blueprint '+(slot+1)+'? Existing items get partial refunds; the saved items are repurchased for $'+net+' net.'))return false;
+ cashChange(-net);
+ parts=purchased.map(b=>({id:idCounter++,kind:b.kind,index:b.index,level:b.level,paid:b.paid,upgradeSpent:b.upgradeSpent,cooldown:0}));
+ rails=Object.fromEntries(Object.keys(railSpecs).map(k=>[k,!!plan.rails?.[k]]));
+ customRailPoints=[...(plan.customRailPoints||[])];
+ mode=maps[plan.mode]&&mapUnlocks[plan.mode]?plan.mode:mode;
+ applyMapTheme();balls=[];ensureBall();selected=null;selectedIds.clear();
+ save();refreshShop();message('Loaded blueprint '+(slot+1)+'. Net cost: $'+net+'.');return true
 }
 $('contract').onclick=doContract;$('research').onclick=doResearch;$('prestige').onclick=doPrestige;$('efficiency').onclick=showEfficiency;
 $('save-plan').onclick=saveBlueprint;$('load-plan').onclick=loadBlueprint;
 function batchAction(which){const ids=[...new Set([...selectedIds,...(selectedPart()?[selected]:[])])];if(!ids.length){message('Shift-click bumpers first.');return}
- let n=0;for(const id of ids){const b=parts.find(p=>p.id===id);if(!b)continue;if(which==='upgrade'&&b.level<3&&wallet-costUpgrade(b)>=MIN_CASH){cashChange(-costUpgrade(b));b.level++;n++}if(which==='sell'){cashChange(Math.round(types[b.kind].cost*.65+(b.level-1)*types[b.kind].cost*.35));parts=parts.filter(p=>p.id!==id);n++}}
+ let n=0;for(const id of ids){const b=parts.find(p=>p.id===id);if(!b)continue;if(which==='upgrade'&&b.level<3&&wallet-costUpgrade(b)>=MIN_CASH){const cost=costUpgrade(b);cashChange(-cost);b.upgradeSpent=spentOnUpgrades(b)+cost;b.level++;n++}if(which==='sell'){cashChange(refundBumper(b));parts=parts.filter(p=>p.id!==id);n++}}
  selectedIds.clear();selected=null;save();refreshShop();message(n+' bumpers '+(which==='upgrade'?'upgraded':'sold'))
 }
 $('batch-upgrade').onclick=()=>batchAction('upgrade');$('batch-sell').onclick=()=>batchAction('sell');
@@ -750,8 +764,8 @@ function resetGameMemory(){
 }
 function resetProgress(){
  const warning=betaMode
-  ?'RESET BETA SANDBOX?\\n\\nThis wipes only your beta test save and returns you to the unchanged normal game. You can activate beta again whenever you like.'
-  :'RESET ALL NORMAL PINBALL PROGRESS?\\n\\nThis permanently erases cash, score, maps, bumpers, rails, machines, upgrades and blueprints in your NORMAL save. Your separate beta save is untouched.\\n\\nYou will start over at MAP01 with $280. This cannot be undone.';
+  ?'RESET BETA SANDBOX?\n\nThis wipes only your beta test save and returns you to the unchanged normal game. You can activate beta again whenever you like.'
+  :'RESET ALL NORMAL PINBALL PROGRESS?\n\nThis permanently erases cash, score, maps, bumpers, rails, machines, upgrades and blueprints in your NORMAL save. Your separate beta save is untouched.\n\nYou will start over at MAP01 with $280. This cannot be undone.';
  if(!confirm(warning))return false;
  if(betaMode){
   resetGameMemory();save();betaMode=false;
