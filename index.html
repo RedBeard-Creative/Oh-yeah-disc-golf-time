@@ -179,6 +179,107 @@ const machineSpecs={
  elevator:{name:'Ball Elevator',price:1500,key:'8',desc:'Move low balls to upper chamber'}
 };
 const pegGrid=[];for(let row=0;row<7;row++)for(let col=0;col<7;col++)pegGrid.push({col,row,x:102+col*63,y:187+row*68,key:col+'-'+row});
+
+// Every world has its own actual collision silhouette. Points run from the
+// left drain up around the roof and back down to the right drain.
+// The gap between the two final endpoints is deliberately open (ball drain).
+const mapShapes={
+ uloop:[
+  [165,767],[130,716],[60,642],[60,154],[89,103],[474,103],[508,156],[508,641],[435,714],[412,767]
+ ],
+ spiral:[
+  [164,767],[132,721],[90,669],[91,570],[119,528],[81,473],[65,395],
+  [64,284],[107,249],[82,209],[94,145],[159,112],[261,102],
+  [376,114],[473,126],[523,178],[524,292],[488,346],[513,411],
+  [489,474],[522,532],[501,627],[455,695],[414,767]
+ ],
+ eight:[
+  [165,767],[110,729],[69,658],[62,575],[76,502],[142,453],
+  [159,420],[125,386],[74,320],[66,233],[93,149],[158,115],
+  [263,101],[366,105],[455,130],[504,199],[514,285],
+  [475,374],[405,419],[452,465],[509,529],[518,617],[474,700],[413,767]
+ ],
+ hourglass:[
+  [166,767],[109,732],[65,657],[66,546],[120,478],
+  [204,434],[212,404],[125,347],[66,275],[66,164],
+  [117,103],[463,103],[510,165],[510,280],[446,346],
+  [366,406],[365,431],[442,487],[509,546],[506,657],[447,731],[412,767]
+ ],
+ orbital:[
+  [169,767],[112,716],[81,665],[64,582],[57,472],
+  [58,357],[71,252],[110,171],[174,114],
+  [282,96],[392,115],[478,166],[518,254],
+  [527,369],[523,485],[509,584],[482,681],[422,748],[411,767]
+ ],
+ twins:[
+  [170,767],[115,719],[68,662],[66,526],[100,478],
+  [93,431],[65,392],[64,256],[72,179],[102,138],
+  [211,134],[245,166],[277,185],[312,164],[353,134],
+  [469,138],[507,178],[522,266],[520,392],[490,432],
+  [501,483],[525,526],[509,664],[443,722],[411,767]
+ ],
+ tower:[
+  [169,767],[129,720],[78,680],[78,587],[119,587],
+  [119,526],[82,526],[82,443],[106,443],[106,386],
+  [71,386],[71,304],[124,304],[124,256],[74,256],
+  [74,175],[113,175],[113,128],[465,128],
+  [465,176],[506,176],[506,266],[465,266],
+  [465,317],[509,317],[509,401],[475,401],[475,476],
+  [520,476],[520,549],[470,549],[470,604],[507,604],
+  [507,681],[446,729],[414,767]
+ ]
+};
+function worldOutline(){return mapShapes[mode]||mapShapes.uloop}
+function pointInsideShape(x,y,path=worldOutline()){
+ // Treat the open drain mouth as the artificial closing edge for construction.
+ let inside=false;
+ for(let i=0,j=path.length-1;i<path.length;j=i++){
+  const a=path[i],b=path[j];
+  if((a[1]>y)!==(b[1]>y) && x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1])+a[0])inside=!inside
+ }
+ return inside
+}
+function closestEdge(x,y,a,b){
+ const dx=b[0]-a[0],dy=b[1]-a[1],len2=dx*dx+dy*dy;
+ const t=len2?Math.max(0,Math.min(1,((x-a[0])*dx+(y-a[1])*dy)/len2)):0;
+ const cx=a[0]+dx*t,cy=a[1]+dy*t,length=Math.sqrt(len2)||1;
+ return {x:cx,y:cy,dist:Math.hypot(x-cx,y-cy),nx:-dy/length,ny:dx/length}
+}
+function shapeClearance(x,y){
+ const path=worldOutline();if(!pointInsideShape(x,y,path))return -1;
+ let nearest=Infinity;
+ // No hard wall across the open drain, but avoid installing bumpers close to it.
+ for(let i=0;i<path.length-1;i++){
+  const q=closestEdge(x,y,path[i],path[i+1]);nearest=Math.min(nearest,q.dist)
+ }
+ return Math.min(nearest,767-y)
+}
+function reflectShapeWalls(b){
+ // The ball remains fully physical except when intentionally riding a guide rail.
+ if(b.y>778)return;
+ const walls=worldOutline();
+ for(let pass=0;pass<3;pass++){
+  let changed=false;
+  for(let i=0;i<walls.length-1;i++){
+   const q=closestEdge(b.x,b.y,walls[i],walls[i+1]);
+   const threshold=b.r+7;
+   if(q.dist>=threshold)continue;
+   // Interior is the RIGHT side of the directed outline path.
+   const signed=(b.x-q.x)*q.nx+(b.y-q.y)*q.ny;
+   if(signed>=threshold)continue;
+   const correction=threshold-signed+.04;
+   b.x+=q.nx*correction;b.y+=q.ny*correction;
+   const vn=b.vx*q.nx+b.vy*q.ny;
+   if(vn<0){b.vx-=vn*q.nx*1.75;b.vy-=vn*q.ny*1.75}
+   changed=true;
+  }
+  if(!changed)break
+ }
+}
+function isPegVisible(i){
+ const p=pegGrid[i];
+ return !!p&&shapeClearance(p.x,p.y)>11;
+}
 const starter=[{x:228,y:323,r:27,kind:'basic',score:80,points:1},{x:353,y:323,r:25,kind:'power',score:150,points:1}];
 const railPaths={
  left:[[71,497],[69,390],[67,256],[81,170],[160,132],[250,132],[314,150],[381,179],[431,239],[438,309],[294,379]],
