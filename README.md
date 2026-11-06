@@ -158,7 +158,7 @@ Run the no-dependency smoke suite from the repository root:
 node tests/smoke.cjs
 ```
 
-The suite has **168 passing checks** at the time of this update. They cover all seven differently shaped physical wall outlines and collision bounces, the full progress reset and reload, map unlocks and migration, seasonal gradients, raised rails, all 17 bumper types, eight ball choices, eight machines, nine rail locations including a custom rail, scoring, flippers, respawning, cash protections, blueprints, saves, and long-running simulations.
+The suite has **169 passing checks** at the time of this update. They cover all seven differently shaped physical wall outlines and collision bounces, the full progress reset and reload, map unlocks and migration, seasonal gradients, raised rails, all 17 bumper types, eight ball choices, eight machines, nine rail locations including a custom rail, scoring, flippers, respawning, cash protections, blueprints, saves, and long-running simulations.
 
 Important limitation: the suite runs browser-style UI and Canvas mocks, not an actual visible Chrome/StackBlitz session, so it does **not** guarantee pixel-perfect visuals or real-device performance. Open the game in a new browser tab for the visual and feel test.
 
