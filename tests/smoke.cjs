@@ -18,7 +18,7 @@ function runSmoke(source) {
     machines:['gravity','diverter','magnet','emergency','jackpot','multiball','speed','elevator'],
     rails:['left','right','top','rescue','spiral','cross','tunnel','split','custom']
   };
-  function boot(memory=new Map()) {
+  function boot(memory=new Map(),approveReset=true) {
     const nodes={},frames=[],drawing={gradientStops:[],strokes:[],ellipses:0},events={};
     function node(id) {
       if(nodes[id])return nodes[id];
@@ -62,7 +62,7 @@ function runSmoke(source) {
     const window={innerWidth:1200,innerHeight:900,addEventListener(k,fn){(events[k]??=[]).push(fn)}};
     const storage={getItem:k=>memory.get(k)||null,setItem:(k,v)=>memory.set(k,v)};
     new Function('document','window','localStorage','performance','requestAnimationFrame','confirm',code)(
-      document,window,storage,{now:()=>0},fn=>frames.push(fn),()=>true
+      document,window,storage,{now:()=>0},fn=>frames.push(fn),()=>approveReset
     );
     return {api:window.__pinballTest,node,maps,bumpers,balls,machines,frames,drawing,memory,events};
   }
@@ -185,6 +185,9 @@ function runSmoke(source) {
   fresh.node('research').click();
   fresh.node('save-plan').click();
   ok(reset.get().parts.length===1&&reset.get().researchLevel===1,'reset test account has real progress to clear');
+  const declined=boot(new Map(fresh.memory),false).api;
+  const moneyBeforeDecline=declined.get().wallet;
+  ok(declined.resetProgress()===false&&declined.get().wallet===moneyBeforeDecline,'canceling reset leaves progress untouched');
   ok(reset.resetProgress()===true,'reset confirmation accepts full deletion');
   const cleared=reset.get();
   ok(cleared.wallet===280&&cleared.score===0&&cleared.best===0,'reset restores starter wallet and clears scores');
