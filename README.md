@@ -32,6 +32,34 @@ The U, Spiral, and Infinity Eight starts are deliberately **guided paths**, not 
 
 New saves start in MAP01. Existing V2 saves retain money and equipment where compatible. A world that was active in an older save is preserved as unlocked; previously selected worlds cannot be obtained for free by loading an old blueprint.
 
+## Real map shapes & wall physics
+
+Each world now has its own **physical outer silhouette**, not just a different background or a hexagonal cabinet. Its visible 2.5D metallic wall follows the same line segments used by ball collision physics.
+
+| Map | Real playfield shape |
+| --- | --- |
+| MAP01 Neon Foundry | Wide classic bowl with sloping shoulders and bottom drain |
+| MAP02 Summer Sky | Offset snail/wave outline with alternating left and right notches |
+| MAP03 Twilight Fair | Butterfly/twin-loop outline, broader chambers with a waist |
+| MAP04 Desert Circuit | Pronounced hourglass silhouette narrowing in the center |
+| MAP05 Nebula Orbit | Rounded stadium / orbital arena with a tapering lower bowl |
+| MAP06 Cyber District | Double-tower silhouette, central upper notch and split playfield |
+| MAP07 Frostpeak | Stair-step tower outline with multiple shelves and inward cutouts |
+
+The arena outside each silhouette is visibly darkened, and **solid balls collide against that world's actual metal perimeter** instead of the old identical rectangular walls. The low-resolution printed grid is also shape-aware: sockets too close to a wall cannot accept a bumper.
+
+**Existing purchases aren't erased when changing maps.** If a bumper is at a peg that cannot fit within a narrower map, it is temporarily *parked* (inactive on that world), appears faintly in Build mode, and remains owned. Move it to an available peg or switch back to a wider map. The shop tells you how many bumpers are parked.
+
+Guided upper rails still deliberately carry balls above the free-moving playfield. Ghost balls retain their special wall-passing effect.
+
+## Reset your progress
+
+Open the floating **☰ menu**, scroll to **Save management**, then click **🗑 RESET ALL PROGRESS**. A browser confirmation warns that this is permanent.
+
+Reset erases **cash, score and high score, map unlocks, purchased bumpers, rails, machines, research, prestige, contracts, efficiency data, and all three blueprints**. It returns the current browser save to MAP01, **$280**, one basic steel ball, and no upgrades.
+
+This is different from **Reset Round** (restarts the moving balls) and **Reset Build** (sells equipment for partial refunds). Reset is written to the same V2 save slot immediately, so the fresh start persists after reload. Other historical game versions' separate save keys are not changed.
+
 ## Bumper types (17)
 
 | Type | Shop cost | Behavior |
@@ -130,7 +158,7 @@ Run the no-dependency smoke suite from the repository root:
 node tests/smoke.cjs
 ```
 
-The suite has **122 passing checks** at the time of this update. They cover all seven map selections, map unlock purchases and save migration, distinct background gradients, raised rail drawing, all 17 bumper types, all eight ball choices, eight purchasable machines, nine rail locations including a custom rail, bumper scoring/rebounding, flipper motion, automatic ball respawning, the protected cash floor, blueprints, saved data, and long-running finite ball positions on each map.
+The suite has **168 passing checks** at the time of this update. They cover all seven differently shaped physical wall outlines and collision bounces, the full progress reset and reload, map unlocks and migration, seasonal gradients, raised rails, all 17 bumper types, eight ball choices, eight machines, nine rail locations including a custom rail, scoring, flippers, respawning, cash protections, blueprints, saves, and long-running simulations.
 
 Important limitation: the suite runs browser-style UI and Canvas mocks, not an actual visible Chrome/StackBlitz session, so it does **not** guarantee pixel-perfect visuals or real-device performance. Open the game in a new browser tab for the visual and feel test.
 
