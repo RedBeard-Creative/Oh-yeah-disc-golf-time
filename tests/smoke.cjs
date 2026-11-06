@@ -145,6 +145,59 @@ function runSmoke(source) {
   ok(a.get().ballStates[0].vx<0,'orbital gravity pulls toward central well');
   a.walletSet(76);a.cashChange(-1000);ok(a.get().wallet===75,'maintenance-safe floor works after all upgrades');
 
+  // Seven actual playfield silhouettes, not just seven colors.
+  const geo=boot(),shapeGame=geo.api,signatures=new Set();
+  for(const id of names.maps){
+    shapeGame.walletSet(100000);
+    shapeGame.chooseMode(id);
+    const outline=shapeGame.worldOutline();
+    const signature=outline.map(p=>p.join(',')).join(';');
+    ok(!signatures.has(signature),'unique wall silhouette on '+id);
+    signatures.add(signature);
+    ok(outline.length>=10,'world '+id+' has a full geometric wall outline');
+    const buildable=Array.from({length:49},(_,i)=>i).filter(i=>shapeGame.canBuild(i,'basic'));
+    ok(buildable.length>=5,'world '+id+' offers at least 5 valid Basic sockets');
+    const candidates=[];
+    for(let j=0;j<outline.length-1;j++){
+      const p=outline[j],q=outline[j+1],dx=q[0]-p[0],dy=q[1]-p[1],length=Math.hypot(dx,dy);
+      if(length<35)continue;
+      const nx=-dy/length,ny=dx/length,mx=(p[0]+q[0])*.5,my=(p[1]+q[1])*.5;
+      if(nx>.67&&my>235&&my<585&&mx<215)candidates.push({nx,ny,mx,my});
+    }
+    ok(candidates.length>0,'left collision wall exists on '+id);
+    const wall=candidates[0];
+    shapeGame.setBall(wall.mx+wall.nx*19,wall.my+wall.ny*19,-wall.nx*480,-wall.ny*480);
+    shapeGame.step(12);
+    const hit=shapeGame.get().ballStates[0];
+    ok(hit.vx*wall.nx+hit.vy*wall.ny>0,'solid shaped wall reflects the ball on '+id);
+  }
+  ok(signatures.size===7,'all seven outlines are different');
+
+  // A full progress reset clears the persisted game economy as well as the session.
+  const fresh=boot(),reset=fresh.api;
+  reset.walletSet(20000);
+  reset.chooseMode('twins');
+  reset.toggleBuild(true);
+  const spotReset=Array.from({length:49},(_,i)=>i).find(i=>reset.canBuild(i,'basic'));
+  reset.selectPeg(spotReset);
+  reset.toggleBuild(false);
+  fresh.machines[0].click();
+  fresh.node('research').click();
+  fresh.node('save-plan').click();
+  ok(reset.get().parts.length===1&&reset.get().researchLevel===1,'reset test account has real progress to clear');
+  ok(reset.resetProgress()===true,'reset confirmation accepts full deletion');
+  const cleared=reset.get();
+  ok(cleared.wallet===280&&cleared.score===0&&cleared.best===0,'reset restores starter wallet and clears scores');
+  ok(cleared.mode==='uloop'&&Object.keys(cleared.mapUnlocks).length===1&&cleared.mapUnlocks.uloop,'reset relocks every world except MAP01');
+  ok(cleared.parts.length===0&&Object.values(cleared.rails).every(v=>!v),'reset removes purchased bumpers and rails');
+  ok(cleared.balls===1&&cleared.ballStates[0].type==='steel','reset restores one standard free ball');
+  ok(cleared.researchLevel===0&&cleared.contractsDone===0&&cleared.prestigeLevel===0,'reset clears research, contracts and prestige');
+  ok(cleared.blueprints.every(v=>v===null),'reset clears all three blueprints');
+  ok(Object.values(cleared.ownedMachines).every(v=>!v),'reset clears owned machines');
+  const resetReload=boot(fresh.memory).api.get();
+  ok(resetReload.wallet===280&&resetReload.mode==='uloop'&&resetReload.parts.length===0,
+    'reset progress remains reset after browser reload');
+
   // Long-running simulation stability.
   for(const id of names.maps){a.walletSet(200000);a.chooseMode(id);a.step(1400);
     ok(a.get().balls>=1,'continuous play retains a ball on '+id);
