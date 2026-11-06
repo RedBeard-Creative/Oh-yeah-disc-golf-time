@@ -60,6 +60,8 @@ h1{font-size:20px;color:#8feeff;letter-spacing:.06em;margin:1px 0 5px}h2{font-si
 @media(max-width:550px){#top-right,#top-left{gap:4px}#wallet,.chip{font-size:11px;padding:9px}#wallet small{display:none}#overlay{top:49px;max-height:calc(100dvh - 55px)}}
 
 /* Consistent hardware-like map/rail material styling */
+.beta-launch{background:#254c72!important;border-color:#7ecbff!important;color:#e2f7ff!important}
+.beta-launch:hover{background:#34769d!important}
 .danger-reset{border-color:#b95363!important;background:#481d2b!important;color:#ffd8d8!important}
 .danger-reset:hover{background:#722638!important}
 .mode[data-mode=uloop]{background-image:linear-gradient(135deg,#153950bb,#13273c66)}
@@ -75,7 +77,7 @@ h1{font-size:20px;color:#8feeff;letter-spacing:.06em;margin:1px 0 5px}h2{font-si
 </head>
 <body>
 <div id="stage"><div id="boardbox"><canvas id="board" width="720" height="1008" aria-label="Pinball Tycoon customizable arcade table"></canvas></div></div>
-<div id="top-left"><div id="wallet">💰 <span id="cash">$280</span><small>SAFE MIN $75</small></div><button id="spam" class="chip" title="Buy an extra ball">+ BALL</button></div>
+<div id="top-left"><div id="wallet">💰 <span id="cash">$280</span><small id="save-label">NORMAL SAVE · MIN $75</small></div><button id="spam" class="chip" title="Buy an extra ball">+ BALL</button></div>
 <div id="top-right"><button id="builder" class="chip">🛠 BUILD</button><button id="full" class="chip" title="Fullscreen">⛶</button><button id="menu" class="chip" aria-expanded="false" aria-controls="overlay">☰</button></div>
 <button id="mobile-launch" class="chip">↻ DROP BALL</button>
 <div id="touch"><button id="left">◀ FLIP</button><button id="right">FLIP ▶</button></div>
@@ -110,6 +112,12 @@ h1{font-size:20px;color:#8feeff;letter-spacing:.06em;margin:1px 0 5px}h2{font-si
  <h2>Mouse tools</h2><div class="actiongrid"><button class="btn" id="brush">🖌 BRUSH OFF</button><button class="btn" id="trajectory">⌁ PATH PREVIEW OFF</button><button class="btn" id="batch-upgrade">⬆ UPGRADE SELECTED</button><button class="btn" id="batch-sell">↩ SELL SELECTED</button></div>
  <p class="small">Drag from the shop onto a peg. Right-click a bumper for controls. Mouse wheel zooms; middle-drag pans. Shift-click selects multiple. Brush paints consecutive pegs.</p>
  <h2>Ball controls</h2><div class="actiongrid"><button id="buy-ball" class="btn">+ BALL · $20</button><button id="reset-round" class="btn">↻ RESET ROUND</button><button id="sound" class="btn">♫ SOUND ON</button><button id="clear-layout" class="btn">RESET BUILD</button></div>
+ <h2>Beta test lab</h2>
+ <div class="actiongrid">
+  <button id="beta-test" class="btn beta-launch">🚀 BETA TEST · $100M</button>
+  <button id="exit-beta" class="btn" hidden>↩ NORMAL SAVE</button>
+ </div>
+ <p class="small" id="beta-note">Try every map and machine with $100,000,000. Your normal game is kept safe in a separate save.</p>
  <h2>Save management</h2>
  <div class="actiongrid">
   <button id="reset-progress" class="btn danger-reset" title="Erase all saved Pinball Tycoon progress">🗑 RESET ALL PROGRESS</button>
@@ -299,19 +307,22 @@ let wallet=280,score=0,best=0,income=0,roundHits=0,mode='uloop',isBuild=false,se
   pointerMap=new Map(),particles=[],popups=[],soundOn=true,ctxAudio=null,statsLog=[],railCooldown=0,phaseTimer=0,spawnCooldown=0;
 let chosenBall='steel',mapUnlocks={uloop:true},railPathsExtra={},customRailPoints=[],customRailPending=false,railDiverter=false,ownedMachines={},machineCooldowns={},activeSwitchUntil=0,magnetPulseUntil=0,incomeMultiplierUntil=0,comboHits=0,comboUntil=0,contractsDone=0,totalHits=0,totalRailTrips=0,researchLevel=0,prestigeLevel=0;
 let blueprints=[null,null,null],selectedIds=new Set(),brushMode=false,previewMode=false,zoom=1,panX=0,panY=0,dragging=null,dragMoved=false,lastMouse=null,drawPath=[],rampCharge=0,shortcutReady=0,scoreByKind={},tempRailSwitch=false;
-let savePending=false;
+let savePending=false,betaMode=false;
 const left={x:195,y:734,len:95,rest:.19,up:-.62,a:.19,omega:0,hold:false},right={x:382,y:734,len:95,rest:Math.PI-.19,up:Math.PI+.62,a:Math.PI-.19,omega:0,hold:false};
 const upperFlippers=[
  {x:193,y:530,len:68,rest:.2,up:-.58,a:.2,omega:0,hold:false},
  {x:380,y:530,len:68,rest:Math.PI-.2,up:Math.PI+.58,a:Math.PI-.2,omega:0,hold:false}
 ];
 const storageKey='nexus-pinball-tycoon-v2';
-function save(){try{localStorage.setItem(storageKey,JSON.stringify({
+const betaStorageKey=storageKey+'-beta-sandbox';
+const activeSlotKey=storageKey+'-active-slot';
+try{betaMode=localStorage.getItem(activeSlotKey)==='beta'}catch(e){betaMode=false}
+function save(){try{localStorage.setItem(betaMode?betaStorageKey:storageKey,JSON.stringify({
  wallet,score,best,mode,parts:parts.map(b=>({id:b.id,index:b.index,kind:b.kind,level:b.level})),rails,idCounter,
  chosenBall,mapUnlocks,ownedMachines,researchLevel,prestigeLevel,contractsDone,totalHits,totalRailTrips,blueprints,scoreByKind,
  customRailPoints
  }))}catch(e){}}
-function load(){try{const d=JSON.parse(localStorage.getItem(storageKey)||'null');if(!d)return;
+function load(){try{const d=JSON.parse(localStorage.getItem(betaMode?betaStorageKey:storageKey)||'null');if(!d)return;
  wallet=Number.isFinite(d.wallet)?Math.max(MIN_CASH,Math.floor(d.wallet)):wallet;
  best=Number.isFinite(d.best)?d.best:best;score=Number.isFinite(d.score)?d.score:score;
  mode=maps[d.mode]?d.mode:d.mode==='flip'?'orbital':d.mode==='classic'?'uloop':'uloop';
@@ -578,6 +589,9 @@ function selectedPart(){return parts.find(p=>p.id===selected)}
 function costUpgrade(b){return Math.round(types[b.kind].cost*(b.level===1?.7:1.1))}
 function refreshShop(){const b=selectedPart();
  $('cash').textContent='$'+wallet.toLocaleString();
+ $('save-label').textContent=betaMode?'BETA SANDBOX':'NORMAL SAVE · MIN $75';
+ $('beta-test').hidden=betaMode;$('exit-beta').hidden=!betaMode;
+ $('beta-note').textContent=betaMode?'BETA ACTIVE · All 7 worlds and 8 machines unlocked, research level 6. Install bumpers and rails where you want. Normal save is protected.':'Get $100,000,000, unlock all worlds and machines, and test any build without overwriting your normal save.';
  $('score').textContent=score.toLocaleString();$('best').textContent=best.toLocaleString();
  $('income').textContent='$'+income;
  $('table-value').textContent='$'+Math.round(parts.reduce((v,p)=>v+types[p.kind].cost+(p.level-1)*types[p.kind].cost*.7,0)+Object.entries(rails).reduce((v,[k,on])=>v+(on&&railSpecs[k]?railSpecs[k].price:0),0)).toLocaleString();
